@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StarScope — Explore</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="explore-page">
+  <div class="grid-overlay" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="bracket bracket-tl"></div>
+  <div class="bracket bracket-tr"></div>
+  <div class="bracket bracket-bl"></div>
+  <div class="bracket bracket-br"></div>
+
+  <header class="site-header">
+    <a class="logotype" href="index.html">STARSCOPE</a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="explore.html" aria-current="page">EXPLORE</a>
+      <a href="index.html#about">ABOUT</a>
+    </nav>
+  </header>
+
+  <div class="explore-shell">
+    <!-- Left: filter sidebar. Sliders go inside .filter-slider -->
+    <div class="explore-sidebar">
+      <div class="sidebar-header"></div>
+
+      <div class="filter-group" data-filter="distance">
+              <div class="filter-label">Distance <span class="slider-value">100 ly</span></div>
+        <div class="filter-slider"><input type="range" min="0" max="500" value="100" class="hud-sliderc"></div>
+      </div>
+
+      <div class="filter-group" data-filter="magnitude">
+        <div class="filter-label">Magnitude <span class="slider-value">5.0</span></div>
+        <div class="filter-slider"><input type="range" min="0" max="10" value="5" step="0.1" class="hud-sliderc"></div>
+      </div>
+
+      <div class="filter-group" data-filter="teff">
+      <div class="filter-label">Temperature <span class="slider-value">5778 K</span>
+        <div class="filter-slider"><input type="range" min="2000" max="12000" value="5778" step="100" class="hud-sliderc">
+      </div>
+
+      <div class="filter-group" data-filter="spectral">
+        <div class="filter-label">Spectral Class<span class="slider-value">G2V</span></div>
+        <div class="filter-slider">
+          <label class="hud-radio">
+            <input type="radio" name="spectral-type" value="all" checked> All</label>
+            O
+          </label>
+          <label class="hud-radio">
+            <input type="radio" name="spectral-type" value="0/B"> 0/B (Blue)</label>
+            B
+          <label class="hud-radio">
+            <input type="radio" name="spectral-type" value="A"> A (White)</label>
+          <label class="hud-radio">
+            <input type="radio" name="spectral-type" value="A/F/G">(Yellow)</label>
+            A
+          </label>
+          <label class="hud-radio">
+            <input type="radio" name="spectral-type" value="K/M"> K/M (Red)</label>
+            F
+          </label>
+          <label class="hud-radio">
+            <input type="radio" name="spectral" value="G">
+            G
+          </label>
+          <label class="hud-radio">
+            <input type="radio" name="spectral" value="K">
+            K
+          </label>
+          <label class="hud-radio">
+            <input type="radio" name="spectral" value="M">
+            M
+          </label>
+        </div>
+      </div>
+
+      <div class="sidebar-footer"></div>
+    </div>
+
+    <!-- Right: radar canvas -->
+    <div class="explore-stage">
+      <div class="radar-frame">
+        <canvas id="radar"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/radar.js"></script>
+</body>
+</html>
