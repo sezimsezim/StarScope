@@ -1,0 +1,2838 @@
+explore html:
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StarScope Explore</title>
+    <meta name="description" content="Scientific observatory HUD interface for exploring celestial targets and stellar telemetry." />
+    <link rel="stylesheet" href="./explore.css" />
+    <style>
+      :root {
+        --line: rgba(234, 243, 255, 0.12);
+        --cyan: #6fe7dd;
+        --ink: #eaf3ff;
+        --ink-soft: rgba(234, 243, 255, 0.52);
+        --star-glow: rgba(79, 172, 254, 0.72);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #03070d;
+        background-image: 
+          radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.3), rgba(0,0,0,0)),
+          radial-gradient(1px 1px at 80px 140px, rgba(111, 231, 221, 0.25), rgba(0,0,0,0)),
+          radial-gradient(1px 1px at 220px 70px, rgba(255, 255, 255, 0.2), rgba(0,0,0,0)),
+          radial-gradient(1.5px 1.5px at 380px 290px, rgba(234, 243, 255, 0.35), rgba(0,0,0,0));
+        background-size: 450px 450px;
+        color: var(--ink);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="explore-shell" id="exploreShell">
+      <div class="observatory" id="observatory">
+<!-- Top Observatory Meta -->
+<div class="observatory-meta observatory-meta-top" id="observatoryMetaTop">
+  <a href="index.html" style="color: var(--cyan); text-decoration: none; font-weight: bold; letter-spacing: 1px;">‹ LANDING</a>
+  <span>SYSTEM // MILKY WAY (ORION ARM)</span>
+  <span>OBSERVATORY // ONLINE</span>
+</div>
+
+        <div class="target-code" id="targetCode">TARGET // CANOPUS-0941</div>
+
+        <!-- Main HUD Card -->
+        <article class="hud-card is-active" id="hudCard">
+          <div class="hud-visual" id="hudVisual">
+            <div class="orbit orbit-1"></div>
+            <div class="orbit orbit-2"></div>
+            <div class="orbit orbit-3"></div>
+            <div class="crosshair crosshair-horizontal"></div>
+            <div class="crosshair crosshair-vertical"></div>
+            <div class="procedural-star" id="proceduralStar"></div>
+            <div class="visual-label" id="visualLabel">SPECTRAL ANALYSIS // 0.65µm</div>
+          </div>
+
+          <div class="hud-content" id="hudContent">
+            <div class="hud-kicker" id="starKicker">SPECTRAL CLASS F0 II</div>
+            <div class="star-name" id="starName">BRIGHT GIANT</div>
+            <h1 id="starHeading">Canopus</h1>
+            <div class="hud-designation" id="starDesignation">Alpha Carinae · HD 45348 · HIP 30438</div>
+
+            <div class="hud-grid" id="hudGrid">
+              <div class="metric" id="metricTemp">
+                <span>SURFACE TEMP</span>
+                <strong>7,350 K</strong>
+              </div>
+              <div class="metric" id="metricLum">
+                <span>LUMINOSITY</span>
+                <strong>10,700 L☉</strong>
+              </div>
+              <div class="metric" id="metricDist">
+                <span>DISTANCE</span>
+                <strong>310 LY</strong>
+              </div>
+              <div class="metric" id="metricMass">
+                <span>STELLAR MASS</span>
+                <strong>8.0 M☉</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Search Button & Panel -->
+        <div class="search-wrapper" id="searchWrapper">
+          <button class="search-trigger" id="searchTrigger" type="button" aria-expanded="false" aria-haspopup="dialog">
+            <span class="search-trigger-icon">⌖</span>
+            <span>SEARCH TARGET</span>
+          </button>
+
+          <div class="search-panel" id="searchPanel" role="dialog" aria-modal="false" aria-label="Search celestial targets">
+            <label class="search-label" for="starSearch">CELESTIAL CATALOG SEARCH</label>
+            <div class="search-input-wrap">
+              <span class="search-prefix">›</span>
+              <input
+                type="text"
+                id="starSearch"
+                placeholder="Search name, designation, or Bayer..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="search-close" id="searchClose" type="button" aria-label="Close search">✕ ESC</button>
+            </div>
+
+           <ul class="search-results" id="searchResults" role="listbox"></ul>
+
+          </div>
+        </div>
+
+        <!-- Bottom Observatory Meta -->
+        <div class="observatory-meta observatory-meta-bottom" id="observatoryMetaBottom">
+          <span>COORDINATES // RA 06h 23m 57s · DEC -52° 41′ 45″</span>
+          <span>SPECTRAL RESOLUTION // 0.02 Å</span>
+        </div>
+      </div>
+    </main>
+
+<script type="module">
+  // <script type="module">
+  import { loadGaiaStars } from "./gaia-adapter.js";
+
+  const searchWrapper =
+    document.getElementById("searchWrapper");
+
+  const searchTrigger =
+    document.getElementById("searchTrigger");
+
+  const searchClose =
+    document.getElementById("searchClose");
+
+  const starSearch =
+    document.getElementById("starSearch");
+
+  const searchResults =
+    document.getElementById("searchResults");
+
+  let stars = [];
+
+
+  // ========================================================
+  // SEARCH UI
+  // ========================================================
+
+  function openSearch() {
+    searchWrapper.classList.add("is-open");
+
+    searchTrigger.setAttribute(
+      "aria-expanded",
+      "true"
+    );
+
+    starSearch.focus();
+  }
+
+
+  function closeSearch({ focusTrigger = true } = {}) {
+    searchWrapper.classList.remove("is-open");
+
+    searchTrigger.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+
+    if (focusTrigger) {
+      searchTrigger.focus();
+    }
+  }
+
+
+  searchTrigger.addEventListener(
+    "click",
+    (event) => {
+      event.stopPropagation();
+
+      if (
+        searchWrapper.classList.contains("is-open")
+      ) {
+        closeSearch();
+      } else {
+        openSearch();
+      }
+    }
+  );
+
+
+  searchClose.addEventListener(
+    "click",
+    (event) => {
+      event.stopPropagation();
+      closeSearch();
+    }
+  );
+
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (
+        event.key === "Escape" &&
+        searchWrapper.classList.contains("is-open")
+      ) {
+        closeSearch();
+      }
+    }
+  );
+
+
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (
+        searchWrapper.classList.contains("is-open") &&
+        !searchWrapper.contains(event.target)
+      ) {
+        closeSearch();
+      }
+    }
+  );
+
+
+  // ========================================================
+  // SELECT STAR
+  // ========================================================
+
+  function selectStar(
+    star,
+    { closeSearchPanel = true } = {}
+  ) {
+    document.getElementById(
+      "starHeading"
+    ).textContent = star.name;
+
+
+    document.getElementById(
+      "starKicker"
+    ).textContent = star.kicker;
+
+
+    document.getElementById(
+      "starName"
+    ).textContent = star.category;
+
+
+    document.getElementById(
+      "starDesignation"
+    ).textContent = star.designation;
+
+
+    document.getElementById(
+      "targetCode"
+    ).textContent = star.code;
+
+
+    const bottomMeta =
+      document.getElementById(
+        "observatoryMetaBottom"
+      );
+
+    if (bottomMeta.firstElementChild) {
+      bottomMeta.firstElementChild.textContent =
+        star.coords;
+    }
+
+
+    document.querySelector(
+      "#metricTemp strong"
+    ).textContent = star.temp;
+
+
+    document.querySelector(
+      "#metricLum strong"
+    ).textContent = star.lum;
+
+
+    document.querySelector(
+      "#metricDist strong"
+    ).textContent = star.dist;
+
+
+    document.querySelector(
+      "#metricMass strong"
+    ).textContent = star.mass;
+
+
+    const starElement =
+      document.getElementById(
+        "proceduralStar"
+      );
+
+
+    // Dynamic star color
+    starElement.style.background =
+      star.bg;
+
+
+    // Existing CSS can consume this variable
+    starElement.style.setProperty(
+      "--star-glow",
+      star.glow
+    );
+
+
+    // Update visual label
+    document.getElementById(
+      "visualLabel"
+    ).textContent =
+      `GAIA DR3 // T_EFF ${Math.round(
+        star.temperature
+      ).toLocaleString()} K`;
+
+
+    if (closeSearchPanel) {
+      closeSearch();
+    }
+  }
+
+
+  // ========================================================
+  // SEARCH RESULTS
+  // ========================================================
+
+  function createResultItem(star, index) {
+    const li =
+      document.createElement("li");
+
+
+    const button =
+      document.createElement("button");
+
+
+    button.type = "button";
+
+    button.className =
+      `result-item ${
+        index === 0
+          ? "is-selected"
+          : ""
+      }`;
+
+
+    button.setAttribute(
+      "role",
+      "option"
+    );
+
+
+    // Main result container
+    const resultMain =
+      document.createElement("div");
+
+    resultMain.className =
+      "result-main";
+
+
+    // Colored dot
+    const resultDot =
+      document.createElement("span");
+
+    resultDot.className =
+      "result-dot";
+
+    resultDot.style.color =
+      star.dotColor;
+
+
+    // Text wrapper
+    const resultCopy =
+      document.createElement("div");
+
+    resultCopy.className =
+      "result-copy";
+
+
+    // Star name
+    const resultName =
+      document.createElement("span");
+
+    resultName.className =
+      "result-name";
+
+    resultName.textContent =
+      star.name;
+
+
+    // Designation / source
+    const resultDesignation =
+      document.createElement("span");
+
+    resultDesignation.className =
+      "result-designation";
+
+    resultDesignation.textContent =
+      `${star.designation} · ${star.temperatureBand}-TYPE`;
+
+
+    resultCopy.appendChild(
+      resultName
+    );
+
+    resultCopy.appendChild(
+      resultDesignation
+    );
+
+
+    resultMain.appendChild(
+      resultDot
+    );
+
+    resultMain.appendChild(
+      resultCopy
+    );
+
+
+    // Distance
+    const resultDistance =
+      document.createElement("span");
+
+    resultDistance.className =
+      "result-distance";
+
+    resultDistance.textContent =
+      star.dist;
+
+
+    button.appendChild(
+      resultMain
+    );
+
+    button.appendChild(
+      resultDistance
+    );
+
+
+    button.addEventListener(
+      "click",
+      () => {
+        selectStar(star);
+      }
+    );
+
+
+    li.appendChild(button);
+
+    return li;
+  }
+
+
+  function renderResults(
+    filterText = ""
+  ) {
+    const query =
+      filterText
+        .trim()
+        .toLowerCase();
+
+
+    const filtered =
+      stars.filter((star) => {
+        const searchableText = [
+          star.name,
+          star.id,
+          star.source_id,
+          ...(star.aliases || [])
+        ]
+          .join(" ")
+          .toLowerCase();
+
+
+        return searchableText.includes(
+          query
+        );
+      });
+
+
+    searchResults.innerHTML = "";
+
+
+    if (filtered.length === 0) {
+      const emptyItem =
+        document.createElement("li");
+
+      emptyItem.className =
+        "result-empty";
+
+      emptyItem.textContent =
+        "NO CELESTIAL TARGET MATCHED QUERY";
+
+      searchResults.appendChild(
+        emptyItem
+      );
+
+      return;
+    }
+
+
+    filtered.forEach(
+      (star, index) => {
+        searchResults.appendChild(
+          createResultItem(
+            star,
+            index
+          )
+        );
+      }
+    );
+  }
+
+
+  starSearch.addEventListener(
+    "input",
+    (event) => {
+      renderResults(
+        event.target.value
+      );
+    }
+  );
+
+
+  // ========================================================
+  // INITIALIZE CATALOG
+  // ========================================================
+
+  async function initializeStarScope() {
+    try {
+      searchResults.innerHTML =
+        '<li class="result-empty">LOADING GAIA DR3 CATALOG...</li>';
+
+
+      stars =
+        await loadGaiaStars(
+          "./gaia-stars-v1.json"
+        );
+
+
+      renderResults();
+
+
+      // Read ?q= from index.html search
+      const params =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const initialQuery =
+        params.get("q");
+
+
+      let initialStar =
+        stars[0];
+
+
+      if (initialQuery) {
+        const query =
+          initialQuery
+            .trim()
+            .toLowerCase();
+
+
+        const matchingStar =
+          stars.find((star) => {
+            const text = [
+              star.name,
+              star.id,
+              star.source_id,
+              ...(star.aliases || [])
+            ]
+              .join(" ")
+              .toLowerCase();
+
+
+            return text.includes(query);
+          });
+
+
+        if (matchingStar) {
+  initialStar = matchingStar;
+} else {
+ // Cancel loading the default star if the search returned no results
+initialStar = null;
+
+// Display an error message directly in the observatory interface
+document.getElementById("starHeading").textContent = "STAR NOT FOUND";
+document.getElementById("starKicker").textContent = "ERROR 404";
+document.getElementById("starDesignation").textContent = "Target not found in the GAIA DR3 catalog";
+document.getElementById("targetCode").textContent = "TARGET // NOT_FOUND";
+
+// Reset metrics so data from the previous star does not remain
+document.querySelector("#metricTemp strong").textContent = "---";
+document.querySelector("#metricLum strong").textContent = "---";
+document.querySelector("#metricDist strong").textContent = "---";
+document.querySelector("#metricMass strong").textContent = "---";
+
+// Set the procedural star to a neutral color on error
+const starElement = document.getElementById("proceduralStar");
+starElement.style.background = "rgba(255, 255, 255, 0.1)";
+starElement.style.setProperty("--star-glow", "rgba(255, 0, 0, 0.2)");
+}
+      if (initialStar) {
+        selectStar(
+          initialStar,
+          {
+            closeSearchPanel: false
+          }
+        );
+      }
+    } catch (error) {
+      console.error(
+        "[StarScope] Initialization failed:",
+        error
+      );
+
+
+      if (initialQuery) {
+  if (matchingStar) {
+    initialStar = matchingStar;
+  } else {
+    // STAR NOT FOUND 
+  }
+}
+
+if (initialStar) {
+  selectStar(initialStar, {
+    closeSearchPanel: false
+  });
+}
+    </script>
+  </body>
+</html>
+
+explore.css: :root {
+  --bg: #04060b;
+  --bg-elevated: rgba(10, 16, 27, 0.92);
+  --panel: rgba(13, 18, 29, 0.82);
+  --panel-strong: rgba(18, 25, 38, 0.97);
+  --ink: #eaf3ff;
+  --ink-soft: #8c9bb1;
+  --line: rgba(234, 243, 255, 0.12);
+  --line-strong: rgba(234, 243, 255, 0.25);
+  --cyan: #6fe7dd;
+  --blue: #8cc9ff;
+  --gold: #f7d98f;
+  --orange: #ff9a6b;
+  --red: #ff7a7a;
+  --shadow: rgba(111, 231, 221, 0.32);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(111, 231, 221, 0.08), transparent 28%),
+    radial-gradient(circle at 15% 20%, rgba(140, 201, 255, 0.05), transparent 24%),
+    var(--bg);
+  color: var(--ink);
+}
+
+body {
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(111, 231, 221, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111, 231, 221, 0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at center, black 30%, transparent 85%);
+  pointer-events: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 48%, rgba(0, 0, 0, 0.58) 100%);
+  pointer-events: none;
+}
+
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 48px 0;
+}
+
+.brand,
+.brand:visited {
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.28em;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+
+.nav-links a,
+.nav-links a:visited {
+  text-decoration: none;
+  color: var(--ink-soft);
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover {
+  color: var(--cyan);
+}
+
+.explore-shell {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 120px 32px 64px;
+}
+
+.search-stage {
+  width: min(820px, 80vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.eyebrow {
+  color: var(--cyan);
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  font-size: 11px;
+  margin: 0;
+}
+
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-box input {
+  width: 100%;
+  height: 90px;
+  padding: 0 34px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--ink);
+  font-size: clamp(28px, 5vw, 54px);
+  letter-spacing: 0.04em;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.search-box input::placeholder {
+  color: rgba(234, 243, 255, 0.34);
+}
+
+.search-box input:focus {
+  border-color: rgba(111, 231, 221, 0.8);
+  box-shadow: 0 0 0 1px rgba(111, 231, 221, 0.35);
+}
+
+.suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 12px);
+  display: none;
+  background: rgba(7, 12, 20, 0.92);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.suggestions.visible {
+  display: block;
+}
+
+.suggestion-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.suggestion-item + .suggestion-item {
+  border-top: 1px solid var(--line);
+}
+
+.suggestion-item:hover,
+.suggestion-item:focus-visible {
+  background: rgba(111, 231, 221, 0.06);
+  outline: none;
+}
+
+.suggestion-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.suggestion-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 12px currentColor;
+}
+
+.suggestion-meta {
+  min-width: 0;
+}
+
+.suggestion-name {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-designation {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-right {
+  color: var(--ink-soft);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.empty-state {
+  padding: 18px 18px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+.detail-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  width: min(860px, 82vw);
+  min-height: 420px;
+  background: rgba(7, 12, 20, 0.82);
+  border: 1px solid var(--line);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(16px);
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(280px, 1.3fr);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease, visibility 0.28s ease;
+}
+
+.detail-panel.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.detail-visual {
+  display: grid;
+  place-items: center;
+  padding: 52px 28px 36px;
+  border-right: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+}
+
+.detail-visual::before {
+  content: "";
+  position: absolute;
+  inset: 26px 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+}
+
+.star-orb {
+  --star-size: 180px;
+  --star-core: #8cc9ff;
+  --star-outer: rgba(140, 201, 255, 0.9);
+  --star-glow: rgba(140, 201, 255, 0.7);
+  --star-glow-soft: rgba(140, 201, 255, 0.18);
+  position: relative;
+  width: var(--star-size);
+  height: var(--star-size);
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.98), var(--star-core) 26%, color-mix(in srgb, var(--star-core) 78%, white) 46%, var(--star-outer) 72%, rgba(255,255,255,0) 100%);
+  box-shadow:
+    0 0 22px var(--star-glow),
+    0 0 45px var(--star-glow),
+    0 0 120px var(--star-glow-soft),
+    inset -16px -20px 30px rgba(0, 0, 0, 0.16);
+  animation: pulseStar 3.2s ease-in-out infinite alternate;
+}
+
+.star-orb::before,
+.star-orb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.star-orb::before {
+  inset: -18px;
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 0 0 10px rgba(255,255,255,0.02);
+}
+
+.star-orb::after {
+  inset: -38px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.detail-copy {
+  padding: 42px 36px 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+}
+
+.detail-copy .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.26em;
+}
+
+.detail-copy h2 {
+  margin: 12px 0 6px;
+  font-size: clamp(30px, 4vw, 48px);
+  letter-spacing: -0.04em;
+  font-weight: 700;
+}
+
+.detail-designation {
+  color: var(--ink-soft);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 16px 20px;
+}
+
+.stat {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.stat label {
+  display: block;
+  color: var(--ink-soft);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 9px;
+  margin-bottom: 8px;
+}
+
+.stat strong {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.stat strong.accent {
+  color: var(--gold);
+}
+
+@keyframes pulseStar {
+  0% {
+    transform: scale(0.96);
+    filter: brightness(0.94) saturate(0.95);
+  }
+  100% {
+    transform: scale(1.04);
+    filter: brightness(1.08) saturate(1.12);
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    padding: 24px 20px 0;
+  }
+
+  .nav-links {
+    gap: 12px;
+  }
+
+  .nav-links a {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+
+  .search-stage {
+    width: min(760px, 88vw);
+  }
+
+  .search-box input {
+    height: 72px;
+    padding: 0 22px;
+  }
+
+  .detail-panel {
+    width: min(92vw, 680px);
+    display: block;
+    min-height: auto;
+    top: 52%;
+  }
+
+  .detail-visual {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 30px 18px 24px;
+  }
+
+  .detail-copy {
+    padding: 26px 22px 28px;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(90px, 1fr));
+    gap: 14px 12px;
+  }
+}
+
+style.css: :root {
+  --bg: #04060b;
+  --panel: rgba(9, 16, 25, 0.8);
+  --panel-strong: rgba(10, 18, 30, 0.94);
+  --ink: #eaf3ff;
+  --ink-soft: #8c9bb1;
+  --line: rgba(234, 243, 255, 0.12);
+  --line-strong: rgba(234, 243, 255, 0.24);
+  --cyan: #6fe7dd;
+  --blue: #4facfe;
+  --purple: #d4b5ff;
+  --gold: #f6d365;
+  --amber: #ffb347;
+  --rose: #ff6b6b;
+  --shadow: rgba(111, 231, 221, 0.32);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100%;
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+
+.explore-page {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(111, 231, 221, 0.08), transparent 26%),
+    radial-gradient(circle at 15% 20%, rgba(79, 172, 254, 0.08), transparent 24%),
+    #04060b;
+}
+
+.space-background {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(111, 231, 221, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111, 231, 221, 0.04) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at center, black 35%, transparent 85%);
+}
+
+.space-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 48%, rgba(0, 0, 0, 0.58) 100%);
+}
+
+.explore-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 26px 48px 0;
+}
+
+.brand,
+.brand:visited,
+.brand:active {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+}
+
+.explore-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.explore-nav a,
+.explore-nav a:visited {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  transition: color 0.2s ease;
+}
+
+.explore-nav a:hover,
+.explore-nav a.is-current {
+  color: var(--cyan);
+}
+
+.explore-shell {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 120px 24px 48px;
+}
+
+.search-wrapper {
+  position: relative;
+  width: min(820px, 80vw);
+  z-index: 10;
+  transition: all 0.34s ease;
+}
+
+.search-wrapper.is-active {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, 78vw);
+}
+
+#starSearch {
+  width: 100%;
+  height: 92px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--ink);
+  padding: 0 26px;
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: 1;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+#starSearch::placeholder {
+  color: rgba(234, 243, 255, 0.38);
+}
+
+#starSearch:focus {
+  border-color: rgba(111, 231, 221, 0.74);
+  box-shadow: 0 0 0 1px rgba(111, 231, 221, 0.26), 0 0 24px rgba(111, 231, 221, 0.1);
+}
+
+.search-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 12px);
+  list-style: none;
+  background: rgba(7, 12, 20, 0.92);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.32);
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.search-results li {
+  border-top: 1px solid var(--line);
+}
+
+.search-results li:first-child {
+  border-top: none;
+}
+
+.result-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.result-item:hover,
+.result-item:focus-visible {
+  background: rgba(111, 231, 221, 0.06);
+  outline: none;
+}
+
+.result-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.result-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 12px currentColor;
+}
+
+.result-copy {
+  min-width: 0;
+}
+
+.result-name {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.result-designation {
+  display: block;
+  font-size: 10px;
+  color: var(--ink-soft);
+  letter-spacing: 0.12em;
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.result-distance {
+  color: var(--ink-soft);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.hud-card {
+  position: relative;
+  z-index: 12;
+  width: min(920px, 84vw);
+  min-height: 440px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1.1fr) minmax(330px, 1.25fr);
+  background: rgba(7, 12, 20, 0.82);
+  border: 1px solid var(--line);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  transform: translateY(40px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 0.26s ease, transform 0.26s ease;
+}
+
+.hud-card.is-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.hud-visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 52px 28px 36px;
+  border-right: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.hud-visual::before,
+.hud-visual::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hud-visual::before {
+  width: 280px;
+  height: 280px;
+}
+
+.hud-visual::after {
+  width: 360px;
+  height: 360px;
+}
+
+.procedural-star {
+  --star-size: 180px;
+  --star-color-1: #ffffff;
+  --star-color-2: #4facfe;
+  --star-color-3: #00f2fe;
+  --star-glow: rgba(79, 172, 254, 0.8);
+  width: var(--star-size);
+  height: var(--star-size);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  position: relative;
+  background: radial-gradient(circle at 32% 30%, var(--star-color-1) 12%, var(--star-color-2) 58%, var(--star-color-3) 100%);
+  box-shadow: 0 0 20px var(--star-glow), 0 0 60px rgba(79, 172, 254, 0.26), inset -16px -18px 22px rgba(0, 0, 0, 0.12);
+  transform: scale(1);
+  animation: starPulse 3.4s ease-in-out infinite alternate;
+}
+
+.procedural-star::before,
+.procedural-star::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.procedural-star::before {
+  inset: -16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.procedural-star::after {
+  inset: -30px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@keyframes starPulse {
+  0% {
+    transform: scale(0.96);
+    filter: brightness(0.97) saturate(0.94);
+  }
+  100% {
+    transform: scale(1.04);
+    filter: brightness(1.12) saturate(1.16);
+  }
+}
+
+.hud-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 42px 32px 32px;
+}
+
+.hud-kicker {
+  color: var(--cyan);
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.hud-content h1 {
+  margin-top: 14px;
+  font-size: clamp(36px, 4vw, 52px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.hud-designation {
+  margin-top: 10px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.hud-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 18px 18px;
+  margin-top: 30px;
+}
+
+.metric {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.metric span {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.metric strong {
+  display: block;
+  font-size: clamp(20px, 2vw, 28px);
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+
+@media (max-width: 760px) {
+  .explore-header {
+    padding: 22px 20px 0;
+  }
+
+  .explore-nav {
+    gap: 14px;
+  }
+
+  .explore-nav a,
+  .explore-nav a:visited {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+
+  .search-wrapper,
+  .search-wrapper.is-active {
+    width: min(86vw, 520px);
+  }
+
+  .search-wrapper.is-active {
+    top: 72px;
+  }
+
+  #starSearch {
+    height: 74px;
+    padding: 0 18px;
+  }
+
+  .hud-card {
+    grid-template-columns: 1fr;
+    width: min(90vw, 560px);
+  }
+
+  .hud-visual {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    min-height: 220px;
+    padding: 30px 18px 22px;
+  }
+
+  .hud-content {
+    padding: 30px 20px 28px;
+  }
+
+  .hud-grid {
+    grid-template-columns: repeat(2, minmax(100px, 1fr));
+    gap: 14px 12px;
+  }
+}
+}
+
+.info-note {
+  margin-top: 12px;
+  font-size: 9px;
+  color: var(--ink-dim);
+  letter-spacing: .04em;
+  opacity: .7;
+}
+
+.site-footer {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 64px;
+  padding: 20px 56px;
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+/* =========================================================
+   EXPLORE
+   ========================================================= */
+
+.explore-page {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+
+/* ---------------------------------------------------------
+   MAIN LAYOUT
+   --------------------------------------------------------- */
+
+.explore {
+  position: relative;
+  z-index: 2;
+
+  width: min(1500px, calc(100% - 80px));
+  margin: 0 auto;
+
+  padding-top: 130px;
+  padding-bottom: 90px;
+}
+
+
+/* ---------------------------------------------------------
+   TOP BAR
+   --------------------------------------------------------- */
+
+.explore-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+
+  margin-bottom: 28px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 18px;
+}
+
+
+.explore-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+.explore-heading .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  opacity: 0.5;
+}
+
+
+.explore-heading h1 {
+  margin: 0;
+
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+
+/* ---------------------------------------------------------
+   TELEMETRY
+   --------------------------------------------------------- */
+
+.telemetry {
+  display: flex;
+  gap: 30px;
+
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+
+.telemetry div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+
+.telemetry span {
+  opacity: 0.4;
+}
+
+
+.telemetry strong {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+
+/* ---------------------------------------------------------
+   MAIN INTERFACE
+   --------------------------------------------------------- */
+
+.explore-interface {
+  display: grid;
+
+  grid-template-columns: 260px minmax(0, 1fr);
+
+  gap: 18px;
+
+  min-height: 620px;
+}
+
+
+/* ---------------------------------------------------------
+   FILTER PANEL
+   --------------------------------------------------------- */
+
+.filter-panel {
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid rgba(255, 255, 255, 0.13);
+
+  background: rgba(5, 10, 22, 0.55);
+
+  min-height: 620px;
+}
+
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 16px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+
+.panel-header > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+.panel-index {
+  opacity: 0.35;
+}
+
+
+.panel-title {
+  font-weight: 600;
+}
+
+
+.panel-status {
+  font-size: 8px;
+  opacity: 0.4;
+}
+
+
+/* ---------------------------------------------------------
+   FILTER GROUPS
+   --------------------------------------------------------- */
+
+.filter-group {
+  padding: 20px 16px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+
+  margin-bottom: 14px;
+
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+
+.filter-header span {
+  opacity: 0.65;
+}
+
+
+.filter-header output {
+  font-size: 10px;
+  opacity: 0.95;
+}
+
+
+/* ---------------------------------------------------------
+   SLIDERS
+   --------------------------------------------------------- */
+
+.hud-slider {
+  width: 100%;
+  height: 2px;
+
+  appearance: none;
+
+  background: rgba(255, 255, 255, 0.16);
+
+  outline: none;
+
+  cursor: pointer;
+}
+
+
+.hud-slider::-webkit-slider-thumb {
+  appearance: none;
+
+  width: 9px;
+  height: 9px;
+
+  border: 1px solid rgba(255, 255, 255, 0.8);
+
+  background: #0a1020;
+
+  cursor: pointer;
+}
+
+
+.hud-slider::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+
+  border: 1px solid rgba(255, 255, 255, 0.8);
+
+  background: #0a1020;
+
+  cursor: pointer;
+}
+
+
+.slider-scale {
+  display: flex;
+  justify-content: space-between;
+
+  margin-top: 7px;
+
+  font-size: 7px;
+  letter-spacing: 0.05em;
+
+  opacity: 0.25;
+}
+
+
+/* ---------------------------------------------------------
+   SPECTRAL RADIO
+   --------------------------------------------------------- */
+
+.spectral-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+.hud-radio {
+  position: relative;
+display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 8px 0;
+
+  cursor: pointer;
+}
+
+
+.hud-radio input {
+  position: absolute;
+  opacity: 0;
+}
+
+
+.radio-marker {
+  width: 8px;
+  height: 8px;
+
+  border: 1px solid rgba(255, 255, 255, 0.35);
+
+  transition: 0.2s ease;
+}
+
+
+.hud-radio input:checked + .radio-marker {
+  background: rgba(255, 255, 255, 0.85);
+
+  box-shadow:
+    0 0 8px rgba(150, 200, 255, 0.5);
+}
+
+
+.radio-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+
+.radio-content strong {
+  font-size: 9px;
+  font-weight: 500;
+
+  letter-spacing: 0.08em;
+}
+
+
+.radio-content small {
+  font-size: 7px;
+  letter-spacing: 0.1em;
+
+  opacity: 0.3;
+}
+
+
+/* ---------------------------------------------------------
+   RESET
+   --------------------------------------------------------- */
+
+.reset-filters {
+  margin: 16px;
+
+  padding: 10px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  background: transparent;
+
+  color: inherit;
+
+  font-family: inherit;
+  font-size: 8px;
+
+  letter-spacing: 0.12em;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+.reset-filters:hover {
+  background: rgba(255, 255, 255, 0.05);
+
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+
+/* ---------------------------------------------------------
+   PANEL FOOTER
+   --------------------------------------------------------- */
+
+.panel-footer {
+  display: flex;
+  justify-content: space-between;
+
+  margin-top: auto;
+
+  padding: 14px 16px;
+
+  font-size: 7px;
+  letter-spacing: 0.12em;
+
+  opacity: 0.35;
+}
+
+
+.panel-footer strong {
+  font-weight: 500;
+}
+
+
+/* ---------------------------------------------------------
+   STAR FIELD
+   --------------------------------------------------------- */
+
+.star-field-panel {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  border: 1px solid rgba(255, 255, 255, 0.13);
+
+  background: rgba(2, 7, 18, 0.38);
+}
+
+
+/* ---------------------------------------------------------
+   FIELD HEADER
+   --------------------------------------------------------- */
+
+.field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 15px 18px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+.field-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+
+.field-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+
+.field-description {
+  font-size: 7px;
+  letter-spacing: 0.1em;
+
+  opacity: 0.3;
+}
+
+
+.object-counter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+
+
+.object-counter span {
+  opacity: 0.35;
+}
+
+
+.object-counter strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+
+/* ---------------------------------------------------------
+   RADAR
+   --------------------------------------------------------- */
+
+.radar-frame {
+  position: relative;
+
+  flex: 1;
+
+  min-height: 520px;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      rgba(120, 160, 210, 0.035) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(120, 160, 210, 0.035) 1px,
+      transparent 1px
+    );
+
+  background-size: 60px 60px;
+}
+
+
+#radar {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+}
+
+
+/* ---------------------------------------------------------
+   CENTER TARGET
+   --------------------------------------------------------- */
+
+.field-target {
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: 26px;
+  height: 26px;
+
+  transform: translate(-50%, -50%);
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  pointer-events: none;
+}
+
+
+.field-target::before,
+.field-target::after {
+  content: "";
+
+  position: absolute;
+
+  background: rgba(255, 255, 255, 0.25);
+}
+
+
+.field-target::before {
+  left: 50%;
+  top: -8px;
+
+  width: 1px;
+  height: 42px;
+}
+
+
+.field-target::after {
+  top: 50%;
+  left: -8px;
+
+  width: 42px;
+  height: 1px;
+}
+
+
+/* ---------------------------------------------------------
+   AXIS LABELS
+   --------------------------------------------------------- */
+
+.axis-label {
+  position: absolute;
+
+  font-size: 7px;
+  opacity: 0.25;
+  pointer-events: none;
+}
+.axis-x {
+  right: 15px;
+  bottom: 12px;
+}
+.axis-y {
+  left: 12px;
+  top: 12px;
+}
+
+/* ---------------------------------------------------------
+   FIELD CORNERS
+   --------------------------------------------------------- */
+
+.field-corner {
+  position: absolute;
+
+  font-size: 7px;
+  letter-spacing: 0.1em;
+
+  opacity: 0.25;
+}
+
+
+.field-corner-tl {
+  top: 14px;
+  left: 15px;
+}
+
+
+.field-corner-tr {
+  top: 14px;
+  right: 15px;
+}
+
+
+.field-corner-bl {
+  bottom: 14px;
+  left: 15px;
+}
+
+
+.field-corner-br {
+  bottom: 14px;
+  right: 15px;
+}
+
+
+/* ---------------------------------------------------------
+   FIELD FOOTER
+   --------------------------------------------------------- */
+
+.field-footer {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+.field-footer > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  padding: 12px 15px;
+
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+
+.field-footer > div:last-child {
+  border-right: none;
+}
+
+
+.field-footer span {
+  font-size: 7px;
+  letter-spacing: 0.12em;
+
+  opacity: 0.3;
+}
+
+
+.field-footer strong {
+  font-size: 9px;
+  font-weight: 500;
+}
+
+
+.status-live {
+  opacity: 0.7;
+}
+
+
+/* ---------------------------------------------------------
+   SELECTED STAR PANEL
+   --------------------------------------------------------- */
+
+.star-info {
+  position: fixed;
+
+  z-index: 20;
+
+  top: 50%;
+  right: 30px;
+
+  width: 270px;
+
+  transform:
+    translate(320px, -50%);
+
+  padding: 22px;
+
+  border: 1px solid rgba(255, 255, 255, 0.16);
+
+  background: rgba(5, 10, 22, 0.92);
+
+  transition: transform 0.3s ease;
+}
+
+
+.star-info.is-visible {
+  transform:
+    translate(0, -50%);
+}
+
+
+.info-close {
+  position: absolute;
+
+  top: 12px;
+  right: 12px;
+
+  border: none;
+
+  background: none;
+
+  color: inherit;
+
+  font-family: inherit;
+
+  font-size: 15px;
+
+  cursor: pointer;
+
+  opacity: 0.4;
+}
+
+
+.info-close:hover {
+  opacity: 1;
+}
+
+
+.info-eyebrow {
+  font-size: 7px;
+  letter-spacing: 0.15em;
+
+  opacity: 0.35;
+}
+
+
+.star-info h2 {
+  margin: 10px 0 4px;
+
+  font-size: 20px;
+  font-weight: 500;
+
+  letter-spacing: 0.04em;
+}
+
+
+.star-designation {
+  font-size: 8px;
+
+  opacity: 0.4;
+}
+
+
+.star-data {
+  margin-top: 25px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+.star-data > div {
+  display: flex;
+  justify-content: space-between;
+
+  padding: 11px 0;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+
+.star-data span,
+.info-coordinates span {
+  font-size: 7px;
+  letter-spacing: 0.1em;
+
+  opacity: 0.35;
+}
+
+
+.star-data strong {
+  font-size: 8px;
+  font-weight: 500;
+}
+
+
+.info-coordinates {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  margin-top: 18px;
+}
+
+
+.info-coordinates strong {
+  font-size: 8px;
+  font-weight: 500;
+
+  opacity: 0.7;
+}
+
+
+/* ---------------------------------------------------------
+   RESPONSIVE
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+
+  .explore {
+    width: min(100% - 30px, 700px);
+
+    padding-top: 110px;
+  }
+
+
+  .explore-topbar {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 18px;
+  }
+
+
+  .telemetry {
+    width: 100%;
+  }
+
+
+  .explore-interface {
+    grid-template-columns: 1fr;
+  }
+
+
+  .filter-panel {
+    min-height: auto;
+  }
+
+
+  .radar-frame {
+    min-height: 450px;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .explore {
+    width: calc(100% - 20px);
+  }
+
+
+  .field-footer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+
+  .star-info {
+    right: 10px;
+    left: 10px;
+
+    width: auto;
+  }
+
+}
+
+index.html: <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StarScope — concept demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#04060b;
+    --bg-panel:rgba(9,14,24,.94);
+    --ink:#e7edf5;
+    --ink-dim:#7b8aa3; 
+    --amber:#ffb454;
+    --grid:rgba(111,231,221,.05);
+    --line:rgba(231,237,245,.14);
+    --line-strong:rgba(231,237,245,.28);
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%; background:var(--bg); color:var(--ink); overflow:hidden;}
+  body{position:relative; -webkit-font-smoothing:antialiased;}
+ 
+  /* ---------- background layers ---------- */
+  #starfield{position:fixed; inset:0; z-index:0; display:block;}
+ 
+  .grid-overlay{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:56px 56px;
+    mask-image:radial-gradient(ellipse at 50% 40%, black 40%, transparent 85%);
+  }
+ 
+  .vignette{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(0,0,0,.55) 100%);
+  }
+ 
+  /* corner brackets = viewfinder frame */
+  .bracket{position:fixed; width:26px; height:26px; z-index:5; pointer-events:none; opacity:.55;}
+  .bracket::before,.bracket::after{content:""; position:absolute; background:var(--cyan);}
+  .bracket-tl{top:18px; left:18px;} .bracket-tr{top:18px; right:18px;}
+  .bracket-bl{bottom:18px; left:18px;} .bracket-br{bottom:18px; right:18px;}
+  .bracket::before{width:100%; height:1.5px; top:0;}
+  .bracket::after{width:1.5px; height:100%; left:0;}
+  .bracket-tr::before,.bracket-tr::after{left:auto; right:0;}
+  .bracket-bl::before,.bracket-bl::after{top:auto; bottom:0;}
+  .bracket-br::before{top:auto; bottom:0;} .bracket-br::after{left:auto; right:0;}
+ 
+  /* telemetry ticker */
+  .telemetry{
+    position:fixed; top:20px; right:60px; z-index:5;
+    font-size:10.5px; letter-spacing:.12em; color:var(--ink-dim);
+    text-align:right; line-height:1.6; pointer-events:none;
+    opacity:.85;
+  }
+  .telemetry span{color:var(--cyan);}
+ 
+  /* ---------- header ---------- */
+  .site-header{
+    position:relative; z-index:10; display:flex; align-items:center; justify-content:space-between;
+    padding:26px 56px; letter-spacing:.06em;
+  }
+  .logotype{color:var(--ink); text-decoration:none; font-weight:700; font-size:14px; letter-spacing:.28em;}
+  .site-nav{display:flex; align-items:center; gap:28px;}
+  .site-nav a{color:var(--ink-dim); text-decoration:none; font-size:11px; letter-spacing:.18em;}
+  .site-nav a:hover{color:var(--cyan);}
+ 
+  .sound-toggle{
+    display:flex; align-items:center; gap:8px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-dim); font-family:inherit; font-size:10px; letter-spacing:.16em;
+    padding:7px 12px; cursor:pointer; border-radius:2px; transition:border-color .2s, color .2s;
+  }
+  .sound-toggle:hover{border-color:var(--line-strong); color:var(--ink);}
+  .sound-toggle .dot{width:6px; height:6px; border-radius:50%; background:var(--ink-dim); transition:background .2s, box-shadow .2s;}
+  .sound-toggle[data-on="true"] .dot{background:var(--cyan); box-shadow:0 0 8px var(--cyan);}
+ 
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative; z-index:6; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; height:calc(100vh - 160px); gap:22px;
+    pointer-events:none;
+  }
+  .hero-eyebrow{
+    font-size:11px; letter-spacing:.35em; color:var(--cyan); pointer-events:none;
+  }
+  .hero-title{
+    font-size:clamp(40px, 8vw, 92px); font-weight:700; letter-spacing:-.02em; line-height:.95;
+    color:var(--ink); pointer-events:none;
+  }
+  .hero-subtitle{color:var(--ink-dim); font-size:13px; letter-spacing:.06em; pointer-events:none;}
+ 
+  .star-search{
+    pointer-events:auto; position:relative; margin-top:14px; display:flex; align-items:stretch;
+    width:min(420px, 84vw);
+  }
+  .star-search::before,.star-search::after{
+    content:""; position:absolute; top:-9px; width:12px; height:12px; border:1px solid var(--line-strong);
+  }
+  .star-search::before{left:-9px; border-right:none; border-bottom:none;}
+  .star-search::after{right:-9px; border-left:none; border-bottom:none;}
+  #star-query{
+    flex:1; background:rgba(255,255,255,.02); border:1px solid var(--line); border-right:none;
+    color:var(--ink); font-family:inherit; font-size:13px; letter-spacing:.03em;
+    padding:14px 16px; outline:none; border-radius:0;
+  }
+  #star-query::placeholder{color:var(--ink-dim);}
+  #star-query:focus{border-color:var(--cyan);}
+  .search-submit{
+    background:transparent; border:1px solid var(--line); color:var(--cyan); width:48px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s;
+  }
+  .search-submit:hover{background:rgba(111,231,221,.08);}
+  .visually-hidden{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0);}
+ 
+  /* ---------- featured stars ---------- */
+  .featured-layer{position:fixed; inset:0; z-index:4; pointer-events:none;}
+  .featured-star{
+    position:absolute; width:14px; height:14px; margin:-7px 0 0 -7px;
+    border:none; background:transparent; padding:0; cursor:pointer; pointer-events:auto;
+  }
+  .featured-star .core{
+    position:absolute; inset:4px; border-radius:50%; background:var(--ink);
+    box-shadow:0 0 6px 1px rgba(255,255,255,.6);
+  }
+  .featured-star .ring{
+    position:absolute; inset:0; border-radius:50%; border:1px solid var(--cyan);
+    opacity:0; transform:scale(.6); transition:opacity .25s, transform .25s;
+  }
+  .featured-star::after{
+    content:""; position:absolute; inset:-16px; border-radius:50%;
+    animation:pulse 3.2s ease-in-out infinite;
+  }
+  .featured-star:nth-child(2n)::after{animation-delay:-1.1s;}
+  .featured-star:nth-child(3n)::after{animation-delay:-2s;}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(111,231,221,.15);}
+    50%{box-shadow:0 0 0 8px rgba(111,231,221,0);}
+  }
+  .featured-star:hover .ring,.featured-star:focus-visible .ring{opacity:1; transform:scale(1);}
+  .featured-star:hover .core{box-shadow:0 0 12px 3px var(--cyan);}
+  .featured-star .tag{
+    position:absolute; top:-22px; left:50%; transform:translateX(-50%);
+    font-size:9.5px; letter-spacing:.12em; color:var(--ink-dim); white-space:nowrap;
+    opacity:0; transition:opacity .2s;
+  }
+  .featured-star:hover .tag{opacity:1; color:var(--cyan);}
+ 
+  /* ---------- info panel ---------- */
+  .info-panel{
+    position:fixed; z-index:20; width:260px; background:var(--bg-panel);
+    border:1px solid var(--line-strong); padding:18px; backdrop-filter:blur(6px);
+    opacity:0; transform:translateY(6px) scale(.98); pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  .info-panel.open{opacity:1; transform:translateY(0) scale(1); pointer-events:auto;}
+  .info-panel::before,.info-panel::after{
+    content:""; position:absolute; top:-1px; width:10px; height:10px; border-top:1.5px solid var(--cyan);
+  }
+  .info-panel::before{left:-1px; border-left:1.5px solid var(--cyan);}
+  .info-panel::after{right:-1px; border-right:1.5px solid var(--cyan);}
+  .info-panel .name{font-size:15px; font-weight:700; letter-spacing:.02em; color:var(--ink);}
+  .info-panel .designation{font-size:10px; color:var(--ink-dim); letter-spacing:.08em; margin-bottom:12px;}
+  .info-row{display:flex; justify-content:space-between; font-size:11px; padding:5px 0; border-top:1px solid var(--line);}
+  .info-row span:first-child{color:var(--ink-dim); letter-spacing:.06em;}
+  .info-row span:last-child{color:var(--amber);}
+  .info-close{
+    position:absolute; top:10px; right:10px; background:none; border:none; color:var(--ink-dim);
+    font-family:inherit; font-size:14px; cursor:pointer; line-height:1;
+  }
+  .info-close:hover{color:var(--ink);}
+  .info-note{margin-top:12px; font-size:9px; color:var(--ink-dim); letter-spacing:.04em; opacity:.7;}
+ 
+  /* ---------- footer ---------- */
+  .site-footer{
+    position:relative; z-index:10; display:flex; gap:40px; justify-content:center;
+    padding:20px; font-size:10.5px; letter-spacing:.14em; color:var(--ink-dim);
+  }
+  .site-footer .footer-col::before{content:"— "; color:var(--line-strong);}
+ 
+  @media (prefers-reduced-motion: reduce){
+    .featured-star::after{animation:none;}
+  }
+  @media (max-width:640px){
+    .site-header{padding:18px 20px;}
+    .telemetry{display:none;}
+    .site-footer{flex-direction:column; align-items:center; gap:6px;}
+  }
+</style>
+</head>
+<body>
+ 
+<canvas id="starfield" aria-hidden="true"></canvas>
+<div class="grid-overlay" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="bracket bracket-tl"></div>
+<div class="bracket bracket-tr"></div>
+<div class="bracket bracket-bl"></div>
+<div class="bracket bracket-br"></div>
+<div class="telemetry" id="telemetry">RA <span id="tRA">05h 14m 32s</span><br>DEC <span id="tDEC">−08° 12′ 06″</span></div>
+ 
+<header class="site-header">
+  <a class="logotype" href="#">STARSCOPE</a>
+  <nav class="site-nav" aria-label="Primary">
+  <a href="explore.html">EXPLORE</a>
+  <a href="#about">ABOUT</a>
+  <button class="sound-toggle" id="soundToggle" data-on="true" aria-pressed="true">
+    <span class="dot"></span><span id="soundLabel">AUDIO: ON</span>
+  </button>
+</nav>
+</header>
+ 
+<main class="hero">
+  <p class="hero-eyebrow">GAIA DR3 — LIVE FIELD</p>
+  <h1 class="hero-title">EXPLORE THE STARS</h1>
+  <p class="hero-subtitle">Real stellar data. One interactive sky. Click a bright point to identify it.</p>
+  <form class="star-search" action="explore.html" method="get" role="search">
+    <label class="visually-hidden" for="star-query">Search a star</label>
+    <input id="star-query" type="search" name="q" placeholder="Search a star..." autocomplete="off" spellcheck="false">
+    <button type="submit" class="search-submit" aria-label="Search">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <circle cx="11" cy="11" r="6.5"></circle>
+        <path d="M16.2 16.2L21 21" stroke-linecap="square"></path>
+      </svg>
+    </button>
+  </form>
+</main>
+ 
+<div class="featured-layer" id="featuredLayer"></div>
+<div class="info-panel" id="infoPanel">
+  <button class="info-close" id="infoClose" aria-label="Close">✕</button>
+  <div class="name" id="pName">—</div>
+  <div class="designation" id="pDesig">—</div>
+  <div class="info-row"><span>DISTANCE</span><span id="pDist">—</span></div>
+  <div class="info-row"><span>SPECTRAL TYPE</span><span id="pSpec">—</span></div>
+  <div class="info-row"><span>APPARENT MAG</span><span id="pMag">—</span></div>
+  <div class="info-row"><span>TEFF</span><span id="pTeff">—</span></div>
+  <div class="info-note">Illustrative reference values — swap for a live Gaia DR3 query.</div>
+</div>
+ 
+<footer class="site-footer" id="about">
+  <div class="footer-col">2,341 stars</div>
+  <div class="footer-col">0–100 ly range</div>
+  <div class="footer-col">Data source: Gaia DR3</div>
+</footer>
+ 
+<script>
+/* ---------------- starfield background ---------------- */
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W,H,stars=[];
+function resize(){
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  const count = reducedMotion ? 90 : Math.min(220, Math.floor((W*H)/9000));
+  stars = Array.from({length:count}, ()=>({
+    x: Math.random()*W, y: Math.random()*H,
+    r: Math.random()*1.3 + 0.3,
+    phase: Math.random()*Math.PI*2,
+    speed: 0.4 + Math.random()*0.8
+  }));
+}
+window.addEventListener('resize', resize);
+resize();
+ 
+let parallaxX = 0, parallaxY = 0;
+window.addEventListener('mousemove', (e)=>{
+  if(reducedMotion) return;
+  parallaxX = (e.clientX / W - 0.5) * 10;
+  parallaxY = (e.clientY / H - 0.5) * 10;
+});
+ 
+let t = 0;
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(parallaxX, parallaxY);
+  for(const s of stars){
+    const tw = reducedMotion ? 1 : 0.55 + 0.45*Math.sin(t*0.001*s.speed + s.phase);
+    ctx.globalAlpha = tw;
+    ctx.fillStyle = '#e7edf5';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+  t++;
+  requestAnimationFrame(draw);
+}
+draw();
+ 
+/* ---------------- telemetry ticker (decorative) ---------------- */
+setInterval(()=>{
+  const s = (Math.floor(Math.random()*60)).toString().padStart(2,'0');
+  document.getElementById('tRA').textContent = `05h 14m ${s}s`;
+}, 1400);
+ 
+/* ---------------- audio: sonification of Teff ---------------- */
+let audioCtx = null;
+let soundOn = true;
+function ensureAudio(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+// map effective temperature (K) to a fundamental frequency: cooler = lower, hotter = higher
+function teffToFreq(teff){
+  const min=2800, max=13000, fMin=180, fMax=760;
+  const clamped = Math.max(min, Math.min(max, teff));
+  return fMin + ((clamped-min)/(max-min)) * (fMax-fMin);
+}
+function playStarTone(teff){
+  if(!soundOn) return;
+  const ctxA = ensureAudio();
+  const now = ctxA.currentTime;
+  const freq = teffToFreq(teff);
+  const isHot = teff > 7000;
+ 
+  const osc1 = ctxA.createOscillator();
+  const osc2 = ctxA.createOscillator();
+  const gain = ctxA.createGain();
+  const filter = ctxA.createBiquadFilter();
+ 
+  osc1.type = isHot ? 'sine' : 'triangle';
+  osc2.type = isHot ? 'square' : 'sine';
+  osc1.frequency.value = freq;
+  osc2.frequency.value = freq * 2.01; // slightly detuned octave, adds shimmer
+  filter.type = 'lowpass';
+  filter.frequency.value = isHot ? 6000 : 1800;
+ 
+  const gain2 = ctxA.createGain();
+  gain2.gain.value = isHot ? 0.06 : 0.02;
+ 
+  osc1.connect(filter);
+  osc2.connect(gain2).connect(filter);
+  filter.connect(gain).connect(ctxA.destination);
+ 
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+ 
+  osc1.start(now); osc2.start(now);
+  osc1.stop(now + 0.95); osc2.stop(now + 0.95);
+}
+function playHoverTick(){
+  if(!soundOn) return;
+  const ctxA = ensureAudio();
+  const now = ctxA.currentTime;
+  const osc = ctxA.createOscillator();
+  const gain = ctxA.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = 1200;
+  gain.gain.setValueAtTime(0.03, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+  osc.connect(gain).connect(ctxA.destination);
+  osc.start(now); osc.stop(now + 0.09);
+}
+ 
+const toggle = document.getElementById('soundToggle');
+toggle.addEventListener('click', ()=>{
+  soundOn = !soundOn;
+  toggle.dataset.on = soundOn;
+  toggle.setAttribute('aria-pressed', soundOn);
+  document.getElementById('soundLabel').textContent = 'AUDIO: ' + (soundOn ? 'ON' : 'OFF');
+  if(soundOn) ensureAudio();
+});
+ 
+/* ---------------- featured stars (real reference data) ---------------- */
+const FEATURED = [
+  {name:'Sirius', desig:'α Canis Majoris A', x:22, y:32, dist:'8.6 ly', spec:'A1V', mag:'−1.46', teff:9940},
+  {name:'Vega', desig:'α Lyrae', x:76, y:24, dist:'25 ly', spec:'A0V', mag:'0.03', teff:9600},
+  {name:'Rigel', desig:'β Orionis', x:14, y:66, dist:'~860 ly', spec:'B8Ia', mag:'0.13', teff:12100},
+  {name:'Betelgeuse', desig:'α Orionis', x:85, y:70, dist:'~550 ly', spec:'M1-2Ia', mag:'~0.5 (var.)', teff:3600},
+  {name:'Arcturus', desig:'α Boötis', x:50, y:16, dist:'37 ly', spec:'K1.5III', mag:'−0.05', teff:4286},
+  {name:'Proxima Centauri', desig:'α Centauri C', x:63, y:82, dist:'4.24 ly', spec:'M5.5Ve', mag:'11.13', teff:3042},
+];
+ 
+const layer = document.getElementById('featuredLayer');
+const panel = document.getElementById('infoPanel');
+ 
+FEATURED.forEach((star)=>{
+  const btn = document.createElement('button');
+  btn.className = 'featured-star';
+  btn.style.left = star.x + 'vw';
+  btn.style.top = star.y + 'vh';
+  btn.setAttribute('aria-label', 'Identify ' + star.name);
+  btn.innerHTML = `<span class="tag">${star.name.toUpperCase()}</span><span class="ring"></span><span class="core"></span>`;
+ 
+  btn.addEventListener('mouseenter', playHoverTick);
+  btn.addEventListener('click', (e)=>{
+    playStarTone(star.teff);
+    openPanel(star, btn);
+    e.stopPropagation();
+  });
+  layer.appendChild(btn);
+});
+ 
+function openPanel(star, btn){
+  document.getElementById('pName').textContent = star.name;
+  document.getElementById('pDesig').textContent = star.desig;
+  document.getElementById('pDist').textContent = star.dist;
+  document.getElementById('pSpec').textContent = star.spec;
+  document.getElementById('pMag').textContent = star.mag;
+  document.getElementById('pTeff').textContent = star.teff.toLocaleString() + ' K';
+ 
+  const rect = btn.getBoundingClientRect();
+  const panelW = 260;
+  let left = rect.left + 24;
+  let top = rect.top - 10;
+  if(left + panelW > window.innerWidth - 20) left = rect.left - panelW - 24;
+  if(top + 220 > window.innerHeight) top = window.innerHeight - 240;
+  if(top < 20) top = 20;
+  panel.style.left = left + 'px';
+  panel.style.top = top + 'px';
+  panel.classList.add('open');
+}
+document.getElementById('infoClose').addEventListener('click', ()=> panel.classList.remove('open'));
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') panel.classList.remove('open'); });
+document.addEventListener('click', (e)=>{
+  if(panel.classList.contains('open') && !panel.contains(e.target) && !e.target.closest('.featured-star')){
+    panel.classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>
+ 

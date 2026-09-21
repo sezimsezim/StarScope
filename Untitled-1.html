@@ -1,0 +1,157 @@
+          code: "TARGET // CANOPUS-0941",
+          coords: "COORDINATES // RA 06h 23m 57s · DEC -52° 41′ 45″",
+          temp: "7,350 K",
+          lum: "10,700 L☉",
+          dist: "310 LY",
+          mass: "8.0 M☉",
+          bg: "radial-gradient(circle at 32% 30%, #ffffff 10%, #dfeeff 45%, #4facfe 100%)",
+          glow: "rgba(79, 172, 254, 0.72)",
+          dotColor: "#4facfe"
+        },
+        {
+          name: "Sirius A",
+          kicker: "SPECTRAL CLASS A1 V",
+          category: "MAIN SEQUENCE",
+          designation: "Alpha Canis Majoris · HD 48915 · HIP 32349",
+          code: "TARGET // SIRIUS-0001",
+          coords: "COORDINATES // RA 06h 45m 08s · DEC -16° 42′ 58″",
+          temp: "9,940 K",
+          lum: "25.4 L☉",
+          dist: "8.6 LY",
+          mass: "2.06 M☉",
+          bg: "radial-gradient(circle at 32% 30%, #ffffff 15%, #d4f7f4 50%, #6fe7dd 100%)",
+          glow: "rgba(111, 231, 221, 0.75)",
+          dotColor: "#6fe7dd"
+        },
+        {
+          name: "Vega",
+          kicker: "SPECTRAL CLASS A0 V",
+          category: "RAPID ROTATOR",
+          designation: "Alpha Lyrae · HD 172167 · HIP 91262",
+          code: "TARGET // VEGA-1102",
+          coords: "COORDINATES // RA 18h 36m 56s · DEC +38° 47′ 01″",
+          temp: "9,602 K",
+          lum: "40.12 L☉",
+          dist: "25.0 LY",
+          mass: "2.13 M☉",
+          bg: "radial-gradient(circle at 32% 30%, #ffffff 15%, #e1ecff 45%, #88b1f7 100%)",z
+          glow: "rgba(136, 177, 247, 0.7)",
+          dotColor: "#a1c4fd"
+        },
+        {
+          name: "Betelgeuse",
+          kicker: "SPECTRAL CLASS M1-2 Ia-ab",
+          category: "RED SUPERGIANT",
+          designation: "Alpha Orionis · HD 39801 · HIP 27989",
+          code: "TARGET // BETELGEUSE-0588",
+          coords: "COORDINATES // RA 05h 55m 10s · DEC +07° 24′ 25″",
+          temp: "3,600 K",
+          lum: "126,000 L☉",
+          dist: "642 LY",
+          mass: "16.5 M☉",
+          bg: "radial-gradient(circle at 32% 30%, #fff2e0 10%, #ff9a76 45%, #ff5722 100%)",
+          glow: "rgba(255, 87, 34, 0.75)",
+          dotColor: "#ff7e5f"
+        }
+      ];
+
+      function openSearch() {
+        searchWrapper.classList.add('is-open');
+        searchTrigger.setAttribute('aria-expanded', 'true');
+        starSearch.focus();
+      }
+
+      function closeSearch() {
+        searchWrapper.classList.remove('is-open');
+        searchTrigger.setAttribute('aria-expanded', 'false');
+        searchTrigger.focus();
+      }
+
+      searchTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (searchWrapper.classList.contains('is-open')) {
+          closeSearch();
+        } else {
+          openSearch();
+        }
+      });
+
+      searchClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeSearch();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && searchWrapper.classList.contains('is-open')) {
+          closeSearch();
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (searchWrapper.classList.contains('is-open') && !searchWrapper.contains(e.target)) {
+          closeSearch();
+        }
+      });
+
+      function selectStar(star) {
+        document.getElementById('starHeading').textContent = star.name;
+        document.getElementById('starKicker').textContent = star.kicker;
+        document.getElementById('starName').textContent = star.category;
+        document.getElementById('starDesignation').textContent = star.designation;
+        document.getElementById('targetCode').textContent = star.code;
+        document.getElementById('observatoryMetaBottom').firstElementChild.textContent = star.coords;
+        document.querySelector('#metricTemp strong').textContent = star.temp;
+        document.querySelector('#metricLum strong').textContent = star.lum;
+        document.querySelector('#metricDist strong').textContent = star.dist;
+        document.querySelector('#metricMass strong').textContent = star.mass;
+
+        const starEl = document.getElementById('proceduralStar');
+        starEl.style.background = star.bg;
+        starEl.style.setProperty('--star-glow', star.glow);
+
+        closeSearch();
+      }
+
+      function renderResults(filterText = '') {
+        const query = filterText.trim().toLowerCase();
+        const filtered = stars.filter(s => 
+          s.name.toLowerCase().includes(query) ||
+          s.designation.toLowerCase().includes(query) ||
+          s.category.toLowerCase().includes(query)
+        );
+
+        searchResults.innerHTML = '';
+        if (filtered.length === 0) {
+          searchResults.innerHTML = '<li class="result-empty">NO CELESTIAL TARGET MATCHED QUERY</li>';
+          return;
+        }
+
+        filtered.forEach((star, idx) => {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `result-item ${idx === 0 ? 'is-selected' : ''}`;
+          btn.innerHTML = `
+            <div class="result-main">
+              <span class="result-dot" style="color: ${star.dotColor};"></span>
+              <div class="result-copy">
+                <span class="result-name">${star.name}</span>
+                <span class="result-designation">${star.designation}</span>
+              </div>
+            </div>
+            <span class="result-distance">${star.dist}</span>
+          `;
+          btn.addEventListener('click', () => selectStar(star));
+          li.appendChild(btn);
+          searchResults.appendChild(li);
+        });
+      }
+
+      starSearch.addEventListener('input', (e) => {
+        renderResults(e.target.value);
+      });
+
+      renderResults();
+    </script>
+  </body>
+</html>

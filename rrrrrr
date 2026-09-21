@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StarScope Explore</title>
+    <meta name="description" content="Scientific observatory HUD interface for exploring celestial targets and stellar telemetry." />
+    <link rel="stylesheet" href="./explore.css" />
+    <style>
+      :root {
+        --line: rgba(234, 243, 255, 0.12);
+        --cyan: #6fe7dd;
+        --ink: #eaf3ff;
+        --ink-soft: rgba(234, 243, 255, 0.52);
+        --star-glow: rgba(79, 172, 254, 0.72);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #03070d;
+        background-image: 
+          radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.3), rgba(0,0,0,0)),
+          radial-gradient(1px 1px at 80px 140px, rgba(111, 231, 221, 0.25), rgba(0,0,0,0)),
+          radial-gradient(1px 1px at 220px 70px, rgba(255, 255, 255, 0.2), rgba(0,0,0,0)),
+          radial-gradient(1.5px 1.5px at 380px 290px, rgba(234, 243, 255, 0.35), rgba(0,0,0,0));
+        background-size: 450px 450px;
+        color: var(--ink);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, ConsolCourier New", monospace;
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="explore-shell" id="exploreShell">
+      <div class="observatory" id="observatory">
+        <!-- Top Observatory Meta -->
+        <div class="observatory-meta observatory-meta-top" id="observatoryMetaTop">
+          <span>SYSTEM // MILKY WAY (ORION ARM)</span>
+          <span>OBSERVATORY // ONLINE</span>
+        </div>
+
+        <div class="target-code" id="targetCode">TARGET // CANOPUS-0941</div>
+
+        <!-- Main HUD Card -->
+        <article class="hud-card is-active" id="hudCard">
+          <div class="hud-visual" id="hudVisual">
+            <div class="orbit orbit-1"></div>
+            <div class="orbit orbit-2"></div>
+            <div class="orbit orbit-3"></div>
+            <div class="crosshair crosshair-horizontal"></div>
+            <div class="crosshair crosshair-vertical"></div>
+            <div class="procedural-star" id="proceduralStar"></div>
+            <div class="visual-label" id="visualLabel">SPECTRAL ANALYSIS // 0.65µm</div>
+          </div>
+
+          <div class="hud-content" id="hudContent">
+            <div class="hud-kicker" id="starKicker">SPECTRAL CLASS F0 II</div>
+            <div class="star-name" id="starName">BRIGHT GIANT</div>
+            <h1 id="starHeading">Canopus</h1>
+            <div class="hud-designation" id="starDesignation">Alpha Carinae · HD 45348 · HIP 30438</div>
+
+            <div class="hud-grid" id="hudGrid">
+              <div class="metric" id="metricTemp">
+                <span>SURFACE TEMP</span>
+                <strong>7,350 K</strong>
+              </div>
+              <div class="metric" id="metricLum">
+                <span>LUMINOSITY</span>
+                <strong>10,700 L☉</strong>
+              </div>
+              <div class="metric" id="metricDist">
+                <span>DISTANCE</span>
+                <strong>310 LY</strong>
+              </div>
+              <div class="metric" id="metricMass">
+                <span>STELLAR MASS</span>
+                <strong>8.0 M☉</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Search Button & Panel -->
+        <div class="search-wrapper" id="searchWrapper">
+          <button class="search-trigger" id="searchTrigger" type="but aria-haspopup="dialog">
+            <span class="search-trigger-icon">⌖</span>
+            <span>SEARCH TARGET</span>
+          </button>
+
+          <div class="search-panel" id="searchPanel" aria-label="Search celestial targets">
+            <label class="search-label" for="starSearch">CELESTIAL CATALOG SEARCH</label>
+            <div class="search-input-wrap">
+              <span class="search-prefix">›</span>
+              <input
+                type="text"
+                id="starSearch"
+                placeholder="Search name, designation, or Bayer..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="search-close" id="searchClose""Close search">✕ ESC</button>
+            </div>
+
+            <ul class="search-results" id="searchResults" role="listbox">
+              <li>
+                <button class="result-item is-selected" type="button" data-star="Canopus">
+                  <div class="result-main">
+                    <span class="result-dot" style="color: #4facfe;"></span>
+                    <div class="result-copy">
+                      <span class="result-name">Canopus</span>
+                      <span class="result-designation">Alpha Carinae · F0 II</span>
+                    </div>
+                  </div>
+                  <span class="result-distance">310 LY</span>
+                </button>
+              </li>
+              <li>
+                <button class="result-item" type="button" data-star="Sirius">
+                  <div class="result-main">
+                    <span class="result-dot" style="color: #6fe7dd;"></span>
+                    <div class="result-copy">
+                      <span class="result-name">Sirius A</span>
+                      <span class="result-designation">Alpha Canis Majoris · A1 V</span>
+                    </div>
+                  </div>
+                  <span class="result-distance">8.6 LY</span>
+                </button>
+              </li>
+              <li>
+                <button class="result-item" type="button" data-star="Vega">
+                  <div class="result-main">
+                    <span class="result-dot" style="color: #a1c4fd;"></span>
+                    <div class="result-copy">
+                      <span class="result-name">Vega</span>
+                      <span class="result-designation">Alpha Lyrae · A0 V</span>
+                    </div>
+                  </div>
+                  <span class="result-distance">25.0 LY</span>
+                </button>
+              </li>
+              <li>
+                <button class="result-item" type="button" data-star="Betelgeuse">
+                  <div class="result-main">
+                    <span class="result-dot" style="color: #ff7e5f;"></span>
+                    <div class="result-copy">
+                      <span class="result-name">Betelgeuse</span>
+                      <span class="result-designation">Alpha Orionis · M1-2 Ia-ab</span>
+                    </div>
+                  </div>
+                  <span class="result-distance">642 LY</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div
+
+        <!-- Bottom Observatory Meta -->
+        <div class="obser id="observatoryMetaBottom">
+          <span>COORDINATES // RA 06h 23m 57s · DEC -52° 41′ 45″</span>
+          <span>SPECTRAL RESOLUTION // 0.02 Å</span>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      const searchWrapper = document.getElementById('searchWrapper');
+      const searchTrigger = document.getElementById('searchTrigger');
+      const searchClose = document.getElementById('searchClose');
+      const starSearch = document.getElementById('starSearch');
+      const searchResults = document.getElementById('searchResults');
+
+      const stars = [
+        {
+          name: "Canopus",
+          kicker: "SPECTRAL CLASS F0 II",
+          category: "BRIGHT GIANT",
+          designation: "Alpha Carinae · HD 45348 · HIP 30438",
+          code: "TARGET // CANOPUS-0941",
+          coords: "COORDINATES // RA 06h 23m 57s · DEC -52° 41′ 45″",
+          temp: "7,350 K",
+          lum: "10,700 L☉",
+          dist: "310 LY",
+          mass: "8.0 M☉",
+          bg: "radial-gradient(circle at 32% 30%, #ffffff 10%, #dfeeff 45%, #4facfe 100%)",
+          glow: "rgba(79, 172, 254, 0.72)",
+          dotColor: "#4facfe"
+        },
+        {
+          name: "Sirius A",
+          kicker: "SPECTRAL CLASS A1 V",
+          category: "MAIN SEQUENCE",
+          designation: "Alpha Canis Majoris · HD 48915 · HIP 32349",
+          code: "TARGET // SIRIUS-0001",
+          coords: "COORDINATES // RA 06h 45m 08s · DEC -16° 42′ 58″",
+          temp: "9,940 K",
+          lum: "25.4 L☉",
+          dist: "8.6 LY",
+          mass: "2.06 M☉",
+          bg: "radial-gradient(circle at 32% 30%, #ffffff 15%, #d4f7f4 50%, #6fe7dd 100%)",
+          glow: "rgba(111, 231, 221, 0.75)",
+          dotColor: "#6fe7dd"
+        },
+        {
+          name: "Vega",
+          kicker: "SPECTRAL CLASS A0 V",
+          category: "RAPID ROTATOR",
+          designation: "Alpha Lyrae · HD 172167 · HIP 91262",
+          code: "TARGET // VEGA-1102",
+          coords: "COORDINATES // RA 18h 36m 56s · DEC +38° 47′ 01″",
+          temp: "9,602 K",
+          lum: "40.12 L☉",
+          dist: "25.0 LY",
+          mass: "2.13 M☉",
+          bg: "radial-gradient(circle at 32% 30%, #ffffff 15%, #e1ecff 45%, #88b1f7 100%)",
+          glow: "rgba(136, 177, 247, 0.7)",
+          dotColor: "#a1c4fd"
+        },
+        {
+          name: "Betelgeuse",
+          kicker: "SPECTRAL CLASS M1-2 Ia-ab",
+          category: "RED SUPERGIANT",
+          designation: "Alpha Orionis · HD 39801 · HIP 27989",
+          code: "TARGET // BETELGEUSE-0588",
+          coords: "COORDINATES // RA 05h 55m 10s · DEC +07° 24′ 25″",
+          temp: "3,600 K",
+          lum: "126,000 L☉",
+          dist: "642 LY",
+          mass: "16.5 M☉",
+          bg: "radial-gradient(circle at 32% 30%, #fff2e0 10%, #ff9a76 45%, #ff5722 100%)",
+          glow: "rgba(255, 87, 34, 0.75)",
+          dotColor: "#ff7e5f"
+        }
+      ];
+
+      function openSearch() {
+        searchWrapper.classList.add('is-open');
+        searchTrigger.setAttribute('aria-expanded', 'true');
+        starSearch.focus();
+      }
+
+      function closeSearch() {
+        searchWrapper.classList.remove('is-open');
+        searchTrigger.setAttribute('aria-expanded', 'false');
+        searchTrigger.focus();
+      }
+
+      searchTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (searchWrapper.classList.contains('is-open')) {
+          closeSearch();
+        } else {
+          openSearch();
+        }
+      });
+
+      searchClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeSearch();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && searchWrapper.classList.contains('is-open')) {
+          closeSearch();
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (searchWrapper.classList.contains('is-open') && !searchWrapper.contains(e.target)) {
+          closeSearch();
+        }
+      });
+
+      function selectStar(star) {
+        document.getElementById('starHeading').textContent = star.name;
+        document.getElementById('starKicker').textContent = star.kicker;
+        document.getElementById('starName').textContent = star.category;
+        document.getElementById('starDesignation').textContent = star.designation;
+        document.getElementById('targetCode').textContent = star.code;
+        document.getElementById('observatoryMetaBottom').firstElementChild.textContent = star.coords;
+        document.querySelector('#metricTemp strong').textContent = star.temp;
+        document.querySelector('#metricLum strong').textContent = star.lum;
+        document.querySelector('#metricDist strong').textContent = star.dist;
+        document.querySelector('#metricMass strong').textContent = star.mass;
+
+        const starEl = document.getElementById('proceduralStar');
+        starEl.style.background = star.bg;
+        starEl.style.setProperty('--star-glow', star.glow);
+
+        closeSearch();
+      }
+
+      function renderResults(filterText = '') {
+        const query = filterText.trim().toLowerCase();
+        const filtered = stars.filter(s => 
+          s.name.toLowerCase().includes(query) ||
+          s.designation.toLowerCase().includes(query) ||
+          s.category.toLowerCase().includes(query)
+        );
+
+        searchResults.innerHTML = '';
+        if (filtered.length === 0) {
+          searchResults.innerHTML = '<li class="result-empty">NO CELESTIAL TARGET MATCHED QUERY</li>';
+          return;
+        }
+
+        filtered.forEach((star, idx) => {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `result-item ${idx === 0 ? 'is-selected' : ''}`;
+          btn.innerHTML = `
+            <div class="result-main">
+              <span class="result-dot" style="color: ${star.dotColor};"></span>
+              <div class="result-copy">
+                <span class="result-name">${star.name}</span>
+                <span class="result-designation">${star.designation}</span>
+              </div>
+            </div>
+            <span class="result-distance">${star.dist}</span>
+          `;
+          btn.addEventListener('click', () => selectStar(star));
+          li.appendChild(btn);
+          searchResults.appendChild(li);
+        });
+      }
+
+      starSearch.addEventListener('input', (e) => {
+        renderResults(e.target.value);
+      });
+
+      renderResults();
+    </script>
+  </body>
+</html>

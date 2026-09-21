@@ -1,96 +1,368 @@
-<!DOCTYPE html>
-<html lang="en">
+  <!DOCTYPE html>
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StarScope — Explore</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-</head>
-<body class="explore-page">
-  <div class="grid-overlay" aria-hidden="true"></div>
-  <div class="vignette" aria-hidden="true"></div>
-  <div class="bracket bracket-tl"></div>
-  <div class="bracket bracket-tr"></div>
-  <div class="bracket bracket-bl"></div>
-  <div class="bracket bracket-br"></div>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StarScope Explore</title>
+    <meta name="description" content="Scientific observatory HUD interface for exploring celestial targets and stellar telemetry." />
+    <link rel="stylesheet" href="./explore.css" />
+    <style>
+      :root {
+        --line: rgba(234, 243, 255, 0.12);
+        --cyan: #6fe7dd;
+        --ink: #eaf3ff;
+        --ink-soft: rgba(234, 243, 255, 0.52);
+        --star-glow: rgba(79, 172, 254, 0.72);
+      }
 
-  <header class="site-header">
-    <a class="logotype" href="index.html">STARSCOPE</a>
-    <nav class="site-nav" aria-label="Primary">
-      <a href="explore.html" aria-current="page">EXPLORE</a>
-      <a href="index.html#about">ABOUT</a>
-    </nav>
-  </header>
+      * {
+        box-sizing: border-box;
+      }
 
-  <div class="explore-shell">
-    <!-- Left: filter sidebar. Sliders go inside .filter-slider -->
-    <div class="explore-sidebar">
-      <div class="sidebar-header"></div>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #03070d;
+        background-image: 
+          radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.3), rgba(0,0,0,0)),
+          radial-gradient(1px 1px at 80px 140px, rgba(111, 231, 221, 0.25), rgba(0,0,0,0)),
+          radial-gradient(1px 1px at 220px 70px, rgba(255, 255, 255, 0.2), rgba(0,0,0,0)),
+          radial-gradient(1.5px 1.5px at 380px 290px, rgba(234, 243, 255, 0.35), rgba(0,0,0,0));
+        background-size: 450px 450px;
+        color: var(--ink);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="explore-shell" id="exploreShell">
+      <div class="observatory" id="observatory">
+<!-- Top Observatory Meta -->
+<div class="observatory-meta observatory-meta-top" id="observatoryMetaTop">
+  <a href="index.html" style="color: var(--cyan); text-decoration: none; font-weight: bold; letter-spacing: 1px;">‹ LANDING</a>
+  <span>SYSTEM // MILKY WAY (ORION ARM)</span>
+  <span>OBSERVATORY // ONLINE</span>
+</div>
 
-      <div class="filter-group" data-filter="distance">
-              <div class="filter-label">Distance <span class="slider-value">100 ly</span></div>
-        <div class="filter-slider"><input type="range" min="0" max="500" value="100" class="hud-sliderc"></div>
-      </div>
+        <div class="target-code" id="targetCode">TARGET // CANOPUS-0941</div>
 
-      <div class="filter-group" data-filter="magnitude">
-        <div class="filter-label">Magnitude <span class="slider-value">5.0</span></div>
-        <div class="filter-slider"><input type="range" min="0" max="10" value="5" step="0.1" class="hud-sliderc"></div>
-      </div>
+        <!-- Main HUD Card -->
+        <article class="hud-card is-active" id="hudCard">
+          <div class="hud-visual" id="hudVisual">
+            <div class="orbit orbit-1"></div>
+            <div class="orbit orbit-2"></div>
+            <div class="orbit orbit-3"></div>
+            <div class="crosshair crosshair-horizontal"></div>
+            <div class="crosshair crosshair-vertical"></div>
+            <div class="procedural-star" id="proceduralStar"></div>
+            <div class="visual-label" id="visualLabel">SPECTRAL ANALYSIS // 0.65µm</div>
+          </div>
 
-      <div class="filter-group" data-filter="teff">
-      <div class="filter-label">Temperature <span class="slider-value">5778 K</span>
-        <div class="filter-slider"><input type="range" min="2000" max="12000" value="5778" step="100" class="hud-sliderc">
-      </div>
+          <div class="hud-content" id="hudContent">
+            <div class="hud-kicker" id="starKicker">SPECTRAL CLASS F0 II</div>
+            <div class="star-name" id="starName">BRIGHT GIANT</div>
+            <h1 id="starHeading">Canopus</h1>
+            <div class="hud-designation" id="starDesignation">Alpha Carinae · HD 45348 · HIP 30438</div>
 
-      <div class="filter-group" data-filter="spectral">
-        <div class="filter-label">Spectral Class<span class="slider-value">G2V</span></div>
-        <div class="filter-slider">
-          <label class="hud-radio">
-            <input type="radio" name="spectral-type" value="all" checked> All</label>
-            O
-          </label>
-          <label class="hud-radio">
-            <input type="radio" name="spectral-type" value="0/B"> 0/B (Blue)</label>
-            B
-          <label class="hud-radio">
-            <input type="radio" name="spectral-type" value="A"> A (White)</label>
-          <label class="hud-radio">
-            <input type="radio" name="spectral-type" value="A/F/G">(Yellow)</label>
-            A
-          </label>
-          <label class="hud-radio">
-            <input type="radio" name="spectral-type" value="K/M"> K/M (Red)</label>
-            F
-          </label>
-          <label class="hud-radio">
-            <input type="radio" name="spectral" value="G">
-            G
-          </label>
-          <label class="hud-radio">
-            <input type="radio" name="spectral" value="K">
-            K
-          </label>
-          <label class="hud-radio">
-            <input type="radio" name="spectral" value="M">
-            M
-          </label>
+            <div class="hud-grid" id="hudGrid">
+              <div class="metric" id="metricTemp">
+                <span>SURFACE TEMP</span>
+                <strong>7,350 K</strong>
+              </div>
+              <div class="metric" id="metricLum">
+                <span>LUMINOSITY</span>
+                <strong>10,700 L☉</strong>
+              </div>
+              <div class="metric" id="metricDist">
+                <span>DISTANCE</span>
+                <strong>310 LY</strong>
+              </div>
+              <div class="metric" id="metricMass">
+                <span>STELLAR MASS</span>
+                <strong>8.0 M☉</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Search Button & Panel -->
+        <div class="search-wrapper" id="searchWrapper">
+          <button class="search-trigger" id="searchTrigger" type="button" aria-expanded="false" aria-haspopup="dialog">
+            <span class="search-trigger-icon">⌖</span>
+            <span>SEARCH TARGET</span>
+          </button>
+
+          <div class="search-panel" id="searchPanel" role="dialog" aria-modal="false" aria-label="Search celestial targets">
+            <label class="search-label" for="starSearch">CELESTIAL CATALOG SEARCH</label>
+            <div class="search-input-wrap">
+              <span class="search-prefix">›</span>
+              <input
+                type="text"
+                id="starSearch"
+                placeholder="Search name, designation, or Bayer..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="search-close" id="searchClose" type="button" aria-label="Close search">✕ ESC</button>
+            </div>
+
+           <ul class="search-results" id="searchResults" role="listbox"></ul>
+
+          </div>
+        </div>
+
+        <!-- Bottom Observatory Meta -->
+        <div class="observatory-meta observatory-meta-bottom" id="observatoryMetaBottom">
+          <span>COORDINATES // RA 06h 23m 57s · DEC -52° 41′ 45″</span>
+          <span>SPECTRAL RESOLUTION // 0.02 Å</span>
         </div>
       </div>
+    </main>
 
-      <div class="sidebar-footer"></div>
-    </div>
+<script type="module">
+  import { loadGaiaStars } from "./gaia-adapter.js";
 
-    <!-- Right: radar canvas -->
-    <div class="explore-stage">
-      <div class="radar-frame">
-        <canvas id="radar"></canvas>
-      </div>
-    </div>
-  </div>
+  const searchWrapper  = document.getElementById("searchWrapper");
+  const searchTrigger  = document.getElementById("searchTrigger");
+  const searchClose    = document.getElementById("searchClose");
+  const starSearch     = document.getElementById("starSearch");
+  const searchResults  = document.getElementById("searchResults");
 
-  <script src="js/radar.js"></script>
-</body>
+  let stars = [];
+
+
+  // ========================================================
+  // SEARCH UI
+  // ========================================================
+
+  function openSearch() {
+    searchWrapper.classList.add("is-open");
+    searchTrigger.setAttribute("aria-expanded", "true");
+    starSearch.focus();
+  }
+
+  function closeSearch({ focusTrigger = true } = {}) {
+    searchWrapper.classList.remove("is-open");
+    searchTrigger.setAttribute("aria-expanded", "false");
+    if (focusTrigger) searchTrigger.focus();
+  }
+
+  searchTrigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    searchWrapper.classList.contains("is-open") ? closeSearch() : openSearch();
+  });
+
+  searchClose.addEventListener("click", (event) => {
+    event.stopPropagation();
+    closeSearch();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && searchWrapper.classList.contains("is-open")) {
+      closeSearch();
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (
+      searchWrapper.classList.contains("is-open") &&
+      !searchWrapper.contains(event.target)
+    ) {
+      closeSearch();
+    }
+  });
+
+
+  // ========================================================
+  // SELECT STAR
+  // ========================================================
+
+  function selectStar(star, { closeSearchPanel = true } = {}) {
+    document.getElementById("starHeading").textContent    = star.name;
+    document.getElementById("starKicker").textContent     = star.kicker;
+    document.getElementById("starName").textContent       = star.category;
+    document.getElementById("starDesignation").textContent = star.designation;
+    document.getElementById("targetCode").textContent     = star.code;
+
+    const bottomMeta = document.getElementById("observatoryMetaBottom");
+    if (bottomMeta.firstElementChild) {
+      bottomMeta.firstElementChild.textContent = star.coords;
+    }
+
+    document.querySelector("#metricTemp strong").textContent = star.temp;
+    document.querySelector("#metricLum strong").textContent  = star.lum;
+    document.querySelector("#metricDist strong").textContent = star.dist;
+    document.querySelector("#metricMass strong").textContent = star.mass;
+
+    const starElement = document.getElementById("proceduralStar");
+    starElement.style.background = star.bg;
+    starElement.style.setProperty("--star-glow", star.glow);
+
+    // Update visual label with real Gaia T_eff
+    document.getElementById("visualLabel").textContent =
+      `GAIA DR3 // T_EFF ${Math.round(star.temperature).toLocaleString()} K`;
+
+    if (closeSearchPanel) closeSearch();
+  }
+
+
+  // ========================================================
+  // SEARCH RESULTS
+  // ========================================================
+
+  function createResultItem(star, index) {
+    const li     = document.createElement("li");
+    const button = document.createElement("button");
+
+    button.type      = "button";
+    button.className = `result-item${index === 0 ? " is-selected" : ""}`;
+    button.setAttribute("role", "option");
+
+    // Colored dot
+    const resultDot = document.createElement("span");
+    resultDot.className   = "result-dot";
+    resultDot.style.color = star.dotColor;
+
+    // Name + designation text
+    const resultName = document.createElement("span");
+    resultName.className   = "result-name";
+    resultName.textContent = star.name;
+
+    const resultDesignation = document.createElement("span");
+    resultDesignation.className   = "result-designation";
+    resultDesignation.textContent = `${star.designation} · ${star.temperatureBand}-TYPE`;
+
+    const resultCopy = document.createElement("div");
+    resultCopy.className = "result-copy";
+    resultCopy.appendChild(resultName);
+    resultCopy.appendChild(resultDesignation);
+
+    const resultMain = document.createElement("div");
+    resultMain.className = "result-main";
+    resultMain.appendChild(resultDot);
+    resultMain.appendChild(resultCopy);
+
+    // Distance badge
+    const resultDistance = document.createElement("span");
+    resultDistance.className   = "result-distance";
+    resultDistance.textContent = star.dist;
+
+    button.appendChild(resultMain);
+    button.appendChild(resultDistance);
+
+    button.addEventListener("click", () => selectStar(star));
+    li.appendChild(button);
+    return li;
+  }
+
+  function renderResults(filterText = "") {
+    const query = filterText.trim().toLowerCase();
+
+    const filtered = stars.filter((star) => {
+      const searchableText = [
+        star.name,
+        star.id,
+        star.source_id,
+        ...(star.aliases || []),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return searchableText.includes(query);
+    });
+
+    searchResults.innerHTML = "";
+
+    if (filtered.length === 0) {
+      const emptyItem = document.createElement("li");
+      emptyItem.className   = "result-empty";
+      emptyItem.textContent = "NO CELESTIAL TARGET MATCHED QUERY";
+      searchResults.appendChild(emptyItem);
+      return;
+    }
+
+    filtered.forEach((star, index) => {
+      searchResults.appendChild(createResultItem(star, index));
+    });
+  }
+
+  starSearch.addEventListener("input", (event) => {
+    renderResults(event.target.value);
+  });
+
+
+  // ========================================================
+  // INITIALIZE CATALOG
+  // ========================================================
+
+  async function initializeStarScope() {
+    try {
+      searchResults.innerHTML =
+        '<li class="result-empty">LOADING GAIA DR3 CATALOG...</li>';
+
+      // ── Load the real Gaia DR3 static catalog ───────────────────────────────
+      // Generated by fetch_gaia_stars.py from gaiadr3.gaia_source via TAP+.
+      // Update this path if you rename or regenerate the catalog file.
+      stars = await loadGaiaStars("./gaia-stars-v2.json");
+
+      renderResults();
+
+      // Handle ?q= deep-link from index.html search bar
+      const params       = new URLSearchParams(window.location.search);
+      const initialQuery = params.get("q");
+      let   initialStar  = stars[0];
+
+      if (initialQuery) {
+        const query = initialQuery.trim().toLowerCase();
+
+        const matchingStar = stars.find((star) => {
+          const text = [
+            star.name,
+            star.id,
+            star.source_id,
+            ...(star.aliases || []),
+          ]
+            .join(" ")
+            .toLowerCase();
+          return text.includes(query);
+        });
+
+        if (matchingStar) {
+          initialStar = matchingStar;
+        } else {
+          // Query string provided but no star matched — show NOT FOUND state
+          initialStar = null;
+
+          document.getElementById("starHeading").textContent    = "STAR NOT FOUND";
+          document.getElementById("starKicker").textContent     = "ERROR 404";
+          document.getElementById("starDesignation").textContent =
+            "Target not found in the GAIA DR3 catalog";
+          document.getElementById("targetCode").textContent = "TARGET // NOT_FOUND";
+
+          document.querySelector("#metricTemp strong").textContent = "---";
+          document.querySelector("#metricLum strong").textContent  = "---";
+          document.querySelector("#metricDist strong").textContent = "---";
+          document.querySelector("#metricMass strong").textContent = "---";
+
+          const starElement = document.getElementById("proceduralStar");
+          starElement.style.background = "rgba(255, 255, 255, 0.1)";
+          starElement.style.setProperty("--star-glow", "rgba(255, 0, 0, 0.2)");
+        }
+      }
+
+      if (initialStar) {
+        selectStar(initialStar, { closeSearchPanel: false });
+      }
+
+    } catch (error) {
+      console.error("[StarScope] Initialization failed:", error);
+
+      searchResults.innerHTML =
+        '<li class="result-empty">CATALOG UNAVAILABLE — CHECK CONSOLE</li>';
+    }
+  }
+
+  initializeStarScope();
+</script>
+  </body>
 </html>

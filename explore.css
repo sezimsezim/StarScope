@@ -1,0 +1,1099 @@
+/* =========================================================
+   STARSCOPE EXPLORE
+   Central Observatory HUD
+   ========================================================= */
+
+/* ---------- MAIN PAGE ---------- */
+
+.explore-shell {
+  position: relative;
+
+  width: 100%;
+  min-height: 100dvh;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 110px 32px 50px;
+}
+
+
+/* ---------- CENTRAL OBSERVATORY ---------- */
+
+.observatory {
+  position: relative;
+  box-sizing: border-box;
+
+  width: min(1080px, 92vw);
+  height: min(720px, calc(100vh - 160px));
+
+  min-height: 560px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+
+  border: 1px solid rgba(234, 243, 255, 0.08);
+
+  background:
+    radial-gradient(
+      circle at 50% 46%,
+      rgba(111, 231, 221, 0.035),
+      transparent 42%
+    );
+
+  overflow: hidden;
+}
+
+
+/* subtle inner frame */
+
+.observatory::before {
+  content: "";
+
+  position: absolute;
+  inset: 18px;
+
+  border: 1px solid rgba(234, 243, 255, 0.035);
+
+  pointer-events: none;
+}
+
+
+/* center crosshair */
+
+.observatory::after {
+  content: "";
+
+  position: absolute;
+
+  left: 50%;
+  top: 50%;
+
+  width: 70%;
+  height: 1px;
+
+  transform: translate(-50%, -50%);
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(234, 243, 255, 0.035),
+      transparent
+    );
+
+  pointer-events: none;
+}
+
+
+/* ---------- TOP LABELS ---------- */
+
+.observatory-meta {
+  position: absolute;
+
+  z-index: 20;
+
+  color: rgba(234, 243, 255, 0.34);
+
+  font-size: 9px;
+
+  letter-spacing: 0.2em;
+
+  text-transform: uppercase;
+}
+
+
+.observatory-meta-top {
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(900px, calc(100% - 120px));
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+.observatory-meta-bottom {
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(900px, calc(100% - 120px));
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+.target-code {
+  position: absolute;
+
+  top: 58px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  color: rgba(234, 243, 255, 0.3);
+
+  font-size: 8px;
+
+  letter-spacing: 0.22em;
+
+  white-space: nowrap;
+}
+
+
+/* ---------- MAIN HUD CARD ---------- */
+
+.hud-card {
+  position: relative;
+
+  z-index: 10;
+
+  width: min(900px, calc(100% - 120px));
+  min-height: 420px;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(300px, 1.05fr)
+    minmax(320px, 0.95fr);
+
+  background:
+    rgba(7, 12, 20, 0.82);
+
+  border: 1px solid var(--line);
+
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.42);
+
+  backdrop-filter: blur(16px);
+
+  opacity: 1;
+
+  transform: translateY(0);
+
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+
+.hud-card.is-active {
+  opacity: 1;
+
+  transform:
+    translateY(0);
+
+  pointer-events: auto;
+}
+
+
+/* ---------- VISUAL SIDE ---------- */
+
+.hud-visual {
+  position: relative;
+
+  min-width: 0;
+
+  display: grid;
+
+  place-items: center;
+
+  overflow: hidden;
+
+  border-right: 1px solid var(--line);
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(255, 255, 255, 0.035),
+      transparent 58%
+    );
+}
+
+
+/* ---------- ORBITS ---------- */
+
+.orbit {
+  position: absolute;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(255, 255, 255, 0.07);
+
+  pointer-events: none;
+}
+
+
+.orbit-1 {
+  width: 270px;
+  height: 270px;
+}
+
+
+.orbit-2 {
+  width: 360px;
+  height: 360px;
+
+  border-color:
+    rgba(111, 231, 221, 0.055);
+}
+
+
+.orbit-3 {
+  width: 460px;
+  height: 460px;
+
+  border-color:
+    rgba(255, 255, 255, 0.035);
+}
+
+
+/* ---------- CROSSHAIR ---------- */
+
+.crosshair {
+  position: absolute;
+
+  background:
+    rgba(234, 243, 255, 0.055);
+
+  pointer-events: none;
+}
+
+
+.crosshair-horizontal {
+  width: 72%;
+  height: 1px;
+}
+
+
+.crosshair-vertical {
+  width: 1px;
+  height: 72%;
+}
+
+
+/* ---------- STAR ---------- */
+
+.procedural-star {
+  --star-size: 220px;
+
+  position: relative;
+
+  z-index: 5;
+
+  width: var(--star-size);
+  height: var(--star-size);
+
+  border-radius: 50%;
+
+  flex: 0 0 auto;
+
+  background:
+    radial-gradient(
+      circle at 32% 30%,
+      #ffffff 10%,
+      #dfeeff 45%,
+      #4facfe 100%
+    );
+
+  box-shadow:
+    0 0 24px var(--star-glow, rgba(79, 172, 254, 0.72)),
+    0 0 70px rgba(79, 172, 254, 0.2),
+    inset -18px -20px 28px rgba(0, 0, 0, 0.12);
+
+  animation:
+    starPulse 3.8s ease-in-out infinite alternate;
+
+  transition:
+    width 260ms ease,
+    height 260ms ease,
+    background 260ms ease,
+    box-shadow 260ms ease;
+}
+
+
+.procedural-star::before {
+  content: "";
+
+  position: absolute;
+
+  inset: -15px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+
+.procedural-star::after {
+  content: "";
+
+  position: absolute;
+
+  inset: -30px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+
+@keyframes starPulse {
+  0% {
+    transform: scale(0.985);
+
+    filter:
+      brightness(0.98)
+      saturate(0.95);
+  }
+
+  100% {
+    transform: scale(1.015);
+
+    filter:
+      brightness(1.08)
+      saturate(1.08);
+  }
+}
+
+
+/* ---------- VISUAL LABEL ---------- */
+
+.visual-label {
+  position: absolute;
+
+  right: 24px;
+  bottom: 24px;
+
+  color:
+    rgba(234, 243, 255, 0.34);
+
+  font-size: 8px;
+
+  letter-spacing: 0.2em;
+
+  text-transform: uppercase;
+}
+
+
+/* ---------- CONTENT SIDE ---------- */
+
+.hud-content {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 44px 42px;
+}
+
+
+.hud-kicker {
+  color: var(--cyan);
+
+  font-size: 9px;
+
+  letter-spacing: 0.3em;
+
+  text-transform: uppercase;
+}
+
+
+.star-name {
+  margin-top: 10px;
+
+  color: rgba(234, 243, 255, 0.48);
+
+  font-size: 11px;
+
+  letter-spacing: 0.16em;
+
+  text-transform: uppercase;
+}
+
+
+.hud-content h1 {
+  margin-top: 8px;
+
+  color: var(--ink);
+
+  font-size:
+    clamp(38px, 4vw, 60px);
+
+  font-weight: 700;
+
+  line-height: 0.95;
+
+  letter-spacing: -0.055em;
+
+  overflow-wrap: anywhere;
+}
+
+
+.hud-designation {
+  color: var(--ink-soft);
+
+  font-size: 11px;
+
+  letter-spacing: 0.16em;
+
+  text-transform: uppercase;
+}
+
+
+/* ---------- METRICS ---------- */
+
+.hud-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(120px, 1fr));
+
+  gap: 1px;
+
+  margin-top: 38px;
+
+  background:
+    rgba(234, 243, 255, 0.08);
+}
+
+
+.metric {
+  min-width: 0;
+
+  padding: 17px;
+
+  background:
+    rgba(7, 12, 20, 0.72);
+}
+
+
+.metric span {
+  display: block;
+
+  margin-bottom: 9px;
+
+  color: var(--ink-soft);
+
+  font-size: 8px;
+
+  letter-spacing: 0.2em;
+
+  text-transform: uppercase;
+}
+
+
+.metric strong {
+  display: block;
+
+  color: var(--ink);
+
+  font-size:
+    clamp(18px, 2vw, 28px);
+
+  line-height: 1;
+
+  letter-spacing: -0.04em;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+
+/* ---------- SEARCH BUTTON ---------- */
+
+.search-wrapper {
+  position: relative;
+
+  z-index: 30;
+
+  width: 250px;
+}
+
+
+.search-trigger {
+  width: 100%;
+
+  height: 40px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 9px;
+
+  border: 1px solid
+    rgba(234, 243, 255, 0.14);
+
+  background:
+    rgba(4, 6, 11, 0.84);
+
+  color:
+    rgba(234, 243, 255, 0.55);
+
+  font-family: inherit;
+
+  font-size: 8px;
+
+  letter-spacing: 0.2em;
+
+  cursor: pointer;
+
+  backdrop-filter: blur(10px);
+
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+
+.search-trigger:hover,
+.search-trigger:focus-visible {
+  color: var(--cyan);
+
+  border-color:
+    rgba(111, 231, 221, 0.38);
+
+  background:
+    rgba(9, 16, 25, 0.92);
+
+  outline: none;
+}
+
+
+.search-trigger-icon {
+  font-size: 14px;
+
+  line-height: 1;
+}
+
+
+/* ---------- SEARCH PANEL ---------- */
+
+.search-panel {
+  position: absolute;
+
+  left: 50%;
+  bottom: calc(100% + 10px);
+
+  width: 420px;
+  max-width: calc(100vw - 40px);
+
+  padding: 14px;
+
+  background:
+    rgba(5, 9, 15, 0.97);
+
+  border: 1px solid var(--line);
+
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.5);
+
+  backdrop-filter: blur(16px);
+
+  opacity: 0;
+
+  transform:
+    translate(-50%, 8px)
+    scale(0.98);
+
+  pointer-events: none;
+
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+
+.search-wrapper.is-open
+.search-panel {
+  opacity: 1;
+
+  transform:
+    translate(-50%, 0)
+    scale(1);
+
+  pointer-events: auto;
+}
+
+
+/* ---------- SEARCH INPUT ---------- */
+
+.search-label {
+  display: block;
+
+  margin-bottom: 9px;
+
+  color:
+    rgba(234, 243, 255, 0.38);
+
+  font-size: 8px;
+
+  letter-spacing: 0.18em;
+
+  text-transform: uppercase;
+}
+
+
+.search-input-wrap {
+  display: flex;
+
+  align-items: center;
+
+  border: 1px solid
+    rgba(234, 243, 255, 0.1);
+
+  background:
+    rgba(255, 255, 255, 0.018);
+}
+
+
+.search-prefix {
+  padding-left: 12px;
+
+  color: var(--cyan);
+
+  font-size: 15px;
+}
+
+
+#starSearch {
+  width: 100%;
+
+  height: 46px;
+
+  padding: 0 10px;
+
+  border: none;
+
+  background: transparent;
+
+  color: var(--ink);
+
+  font-family: inherit;
+
+  font-size: 12px;
+
+  outline: none;
+}
+
+
+#starSearch::placeholder {
+  color:
+    rgba(234, 243, 255, 0.28);
+}
+
+
+#starSearch:focus {
+  box-shadow: none;
+}
+
+
+.search-close {
+  margin-right: 9px;
+
+  border: none;
+
+  background: transparent;
+
+  color:
+    rgba(234, 243, 255, 0.3);
+
+  font-family: inherit;
+
+  font-size: 8px;
+
+  cursor: pointer;
+}
+
+
+.search-close:hover {
+  color: var(--ink);
+}
+
+
+/* ---------- RESULTS ---------- */
+
+.search-results {
+  list-style: none;
+
+  margin: 10px 0 0;
+  padding: 0;
+
+  max-height: 270px;
+
+  overflow-y: auto;
+
+  border-top: 1px solid var(--line);
+}
+
+
+.search-results li {
+  border-bottom:
+    1px solid rgba(234, 243, 255, 0.06);
+}
+
+
+.result-item {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  padding: 13px 9px;
+
+  border: none;
+
+  background: transparent;
+
+  color: var(--ink);
+
+  font-family: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 160ms ease;
+}
+
+
+.result-item:hover,
+.result-item:focus-visible,
+.result-item.is-selected {
+  background:
+    rgba(111, 231, 221, 0.05);
+
+  outline: none;
+}
+
+
+.result-main {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 0;
+}
+
+
+.result-dot {
+  width: 7px;
+  height: 7px;
+
+  flex: 0 0 auto;
+
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 10px currentColor;
+}
+
+
+.result-copy {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+
+.result-name {
+  font-size: 11px;
+
+  letter-spacing: 0.07em;
+
+  text-transform: uppercase;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+
+.result-designation {
+  margin-top: 4px;
+
+  color: var(--ink-soft);
+
+  font-size: 8px;
+
+  letter-spacing: 0.06em;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+
+.result-distance {
+  flex: 0 0 auto;
+
+  color: var(--ink-soft);
+
+  font-size: 8px;
+
+  white-space: nowrap;
+}
+
+
+.result-empty {
+  padding: 16px 10px;
+
+  color:
+    rgba(234, 243, 255, 0.32);
+
+  font-size: 8px;
+
+  letter-spacing: 0.16em;
+}
+
+
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 800px) {
+
+ .explore-shell {
+    padding:
+      92px
+      12px
+      28px;
+  }
+
+
+  .observatory {
+    width: 100%;
+
+    height:
+      calc(100vh - 120px);
+
+    min-height: 650px;
+  }
+
+
+  .observatory-meta-top {
+    left: 18px;
+    right: 18px;
+    top: 20px;
+    width: auto;
+    transform: none;
+  }
+
+
+  .observatory-meta-bottom {
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    width: auto;
+    transform: none;
+  }
+
+
+  .target-code {
+    top: 48px;
+  }
+
+
+  .hud-card {
+    position: absolute;
+
+    top: 76px;
+    right: 18px;
+    bottom: 105px;
+    left: 18px;
+
+    width: auto;
+    min-height: 0;
+
+    grid-template-columns: 1fr;
+
+    overflow-y: auto;
+  }
+
+
+  .hud-visual {
+    min-height: 285px;
+
+    border-right: none;
+
+    border-bottom: 1px solid var(--line);
+  }
+
+
+  .orbit-3 {
+    width: 390px;
+    height: 390px;
+  }
+
+
+  .orbit-2 {
+    width: 310px;
+    height: 310px;
+  }
+
+
+  .orbit-1 {
+    width: 230px;
+    height: 230px;
+  }
+
+
+  .hud-content {
+    padding: 26px 22px;
+  }
+
+
+  .hud-content h1 {
+    font-size:
+      clamp(32px, 10vw, 52px);
+  }
+
+
+  .hud-grid {
+    margin-top: 24px;
+  }
+
+
+  .metric {
+    padding: 13px;
+  }
+
+
+  .metric strong {
+    font-size: 17px;
+  }
+
+
+  .search-wrapper {
+    position: absolute;
+
+    left: 50%;
+    bottom: 48px;
+
+    transform: translateX(-50%);
+
+    width:
+      min(240px, calc(100% - 80px));
+  }
+
+
+  .search-panel {
+    width:
+      min(390px, calc(100vw - 28px));
+  }
+}
+
+
+@media (max-width: 520px) {
+
+ .explore-shell {
+    padding:
+      78px
+      8px
+      18px;
+  }
+
+
+  .observatory {
+    min-height: 610px;
+  }
+
+
+  .hud-card {
+    top: 66px;
+    right: 10px;
+    bottom: 96px;
+    left: 10px;
+
+    width: auto;
+  }
+
+
+  .hud-visual {
+    min-height: 250px;
+  }
+
+
+  .procedural-star {
+    max-width: 52vw;
+    max-height: 52vw;
+  }
+
+
+  .hud-content {
+    padding:
+      22px
+      17px;
+  }
+
+
+  .hud-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+
+  .metric {
+    padding: 11px;
+  }
+
+
+  .metric span {
+    font-size: 7px;
+  }
+
+
+  .metric strong {
+    font-size: 14px;
+  }
+
+
+  .observatory-meta {
+    font-size: 7px;
+
+    letter-spacing: 0.12em;
+  }
+
+
+  .observatory-meta-top {
+    left: 10px;
+    right: 10px;
+  }
+
+
+  .observatory-meta-bottom {
+    left: 10px;
+    right: 10px;
+  }
+
+
+  .observatory-meta-bottom span:last-child {
+    display: none;
+  }
+}

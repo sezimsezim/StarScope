@@ -11,7 +11,7 @@
   },
   {
     "id": "barnards-star",
-    "name": "Barnard's Star",
+    "name": "Barnard's star",
     "source_id": "4472832130942575872",
     "ra": 269.448502525,
     "dec": 4.739420051,
@@ -21,7 +21,7 @@
   },
   {
     "id": "kapteyns-star",
-    "name": "Kapteyn's Star",
+    "name": "Kapteyn's Star", 
     "source_id": "4810594479418041856",
     "ra": 77.9191,
     "dec": -45.0184,
@@ -50,7 +50,7 @@
     "aliases": ["GJ 887", "HD 217987"]
   },
   {
-    "id": "groombridge-1830",
+    "id": "groombridge-1830", 
     "name": "Groombridge 1830",
     "source_id": "4034171629042489088",
     "ra": 178.2,

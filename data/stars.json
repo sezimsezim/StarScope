@@ -1,0 +1,22 @@
+[
+  {"name":"Sirius","designation":"α Canis Majoris A","distance_ly":8.6,"spectral_type":"A1V","apparent_mag":-1.46,"teff":9940,"constellation":"Canis Major"},
+  {"name":"Vega","designation":"α Lyrae","distance_ly":25.0,"spectral_type":"A0V","apparent_mag":0.03,"teff":9600,"constellation":"Lyra"},
+  {"name":"Rigel","designation":"β Orionis","distance_ly":860.0,"spectral_type":"B8Ia","apparent_mag":0.13,"teff":12100,"constellation":"Orion"},
+  {"name":"Betelgeuse","designation":"α Orionis","distance_ly":548.0,"spectral_type":"M1-2Ia","apparent_mag":0.5,"teff":3600,"constellation":"Orion"},
+  {"name":"Arcturus","designation":"α Boötis","distance_ly":37.0,"spectral_type":"K1.5III","apparent_mag":-0.05,"teff":4286,"constellation":"Boötes"},
+  {"name":"Proxima Centauri","designation":"α Centauri C","distance_ly":4.24,"spectral_type":"M5.5Ve","apparent_mag":11.13,"teff":3042,"constellation":"Centaurus"},
+  {"name":"Altair","designation":"α Aquilae","distance_ly":16.7,"spectral_type":"A7V","apparent_mag":0.77,"teff":7550,"constellation":"Aquila"},
+  {"name":"Deneb","designation":"α Cygni","distance_ly":2615.0,"spectral_type":"A2Ia","apparent_mag":1.25,"teff":8525,"constellation":"Cygnus"},
+  {"name":"Polaris","designation":"α Ursae Minoris","distance_ly":433.0,"spectral_type":"F7Ib","apparent_mag":1.97,"teff":6015,"constellation":"Ursa Minor"},
+  {"name":"Antares","designation":"α Scorpii","distance_ly":550.0,"spectral_type":"M1.5Iab","apparent_mag":1.06,"teff":3500,"constellation":"Scorpius"},
+  {"name":"Spica","designation":"α Virginis","distance_ly":250.0,"spectral_type":"B1III-IV","apparent_mag":0.98,"teff":22500,"constellation":"Virgo"},
+  {"name":"Capella","designation":"α Aurigae","distance_ly":42.9,"spectral_type":"G8III","apparent_mag":0.08,"teff":4970,"constellation":"Auriga"},
+  {"name":"Aldebaran","designation":"α Tauri","distance_ly":65.0,"spectral_type":"K5III","apparent_mag":0.87,"teff":3910,"constellation":"Taurus"},
+  {"name":"Bellatrix","designation":"γ Orionis","distance_ly":240.0,"spectral_type":"B2III","apparent_mag":1.64,"teff":22000,"constellation":"Orion"},
+  {"name":"Canopus","designation":"α Carinae","distance_ly":310.0,"spectral_type":"A9II","apparent_mag":-0.74,"teff":7350,"constellation":"Carina"},
+  {"name":"Mira","designation":"ο Ceti","distance_ly":200.0,"spectral_type":"M7e","apparent_mag":3.5,"teff":3000,"constellation":"Cetus"},
+  {"name":"Alpha Centauri","designation":"α Centauri A","distance_ly":4.37,"spectral_type":"G2V","apparent_mag":-0.27,"teff":5790,"constellation":"Centaurus"},
+  {"name":"Beta Pictoris","designation":"β Pictoris","distance_ly":63.0,"spectral_type":"A6V","apparent_mag":3.86,"teff":8050,"constellation":"Pictor"},
+  {"name":"Mizar","designation":"ζ Ursae Majoris","distance_ly":78.0,"spectral_type":"A2V","apparent_mag":2.04,"teff":9000,"constellation":"Ursa Major"},
+  {"name":"Epsilon Eridani","designation":"ε Eridani","distance_ly":10.5,"spectral_type":"K2V","apparent_mag":3.73,"teff":5084,"constellation":"Eridanus"}
+]
