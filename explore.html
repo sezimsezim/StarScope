@@ -347,19 +347,4 @@
           }
         }
 
-        if (initialStar) {
-          selectStar(initialStar, { closeSearchPanel: false });
-        }
-
-      } catch (error) {
-        console.error("[StarScope] Initialization failed:", error);
-
-        searchResults.innerHTML =
-          '<li class="result-empty">CATALOG UNAVAILABLE — CHECK CONSOLE</li>';
-      }
-    }
-
-    initializeStarScope();
-  </script>
-</body>
-</html>
+        if (initialStar)

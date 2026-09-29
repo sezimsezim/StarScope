@@ -237,4 +237,3 @@ export async function loadGaiaStars(jsonPath = "./gaia-stars-v1.json") {
     };
   });
 }
-```
