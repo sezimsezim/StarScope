@@ -294,20 +294,20 @@
     // INITIALIZE CATALOG
     // ========================================================
 
-    async function initializeStarScope() {
+        async function initializeStarScope() {
       try {
         searchResults.innerHTML =
           '<li class="result-empty">LOADING GAIA DR3 CATALOG...</li>';
 
         // Load the real Gaia DR3 static catalog
-        stars = await loadGaiaStars("./gaia-stars-v2.json");
+        stars = await loadGaiaStars("./gaia-stars-v1.json");
 
         renderResults();
 
         // Handle ?q= deep-link from index.html search bar
-        const params       = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(window.location.search);
         const initialQuery = params.get("q");
-        let   initialStar  = stars[0];
+        let initialStar = stars[0];
 
         if (initialQuery) {
           const query = initialQuery.trim().toLowerCase();
@@ -321,30 +321,50 @@
             ]
               .join(" ")
               .toLowerCase();
+
             return text.includes(query);
           });
 
           if (matchingStar) {
             initialStar = matchingStar;
           } else {
-            // Query string provided but no star matched — show NOT FOUND state
+            // Query string provided but no star matched - show NOT FOUND state
             initialStar = null;
 
-            document.getElementById("starHeading").textContent    = "STAR NOT FOUND";
-            document.getElementById("starKicker").textContent     = "ERROR 404";
-            document.getElementById("starDesignation").textContent =
+            document.getElementById("starHeading").textContent =
+              "STAR NOT FOUND";
+            document.getElementById("starKicker").textContent =
+              "ERROR 404";
+            document.getElementById("starName").textContent =
               "Target not found in the GAIA DR3 catalog";
-            document.getElementById("targetCode").textContent = "TARGET // NOT_FOUND";
+            document.getElementById("starDesignation").textContent =
+              "TARGET // NOT FOUND";
 
             document.querySelector("#metricTemp strong").textContent = "---";
-            document.querySelector("#metricLum strong").textContent  = "---";
+            document.querySelector("#metricLum strong").textContent = "---";
             document.querySelector("#metricDist strong").textContent = "---";
             document.querySelector("#metricMass strong").textContent = "---";
 
             const starElement = document.getElementById("proceduralStar");
-            starElement.style.background = "rgba(255, 255, 255, 0.1)";
-            starElement.style.setProperty("--star-glow", "rgba(255, 0, 0, 0.2)");
+            starElement.style.background =
+              "rgba(255, 255, 255, 0.1)";
+            starElement.style.setProperty(
+              "--star-glow",
+              "rgba(255, 255, 255, 0.2)"
+            );
+          }
+
+          if (initialStar) {
+            selectStar(initialStar, { closeSearchPanel: false });
           }
         }
+      } catch (error) {
+        console.error("Failed to initialize StarScope:", error);
 
-        if (initialStar)
+        searchResults.innerHTML =
+          '<li class="result-empty">GAIA DR3 CATALOG LOAD FAILED</li>';
+      }
+    }
+
+    initializeStarScope();
+  </script>
