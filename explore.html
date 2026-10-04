@@ -49,7 +49,7 @@
         <span>OBSERVATORY // ONLINE</span>
       </div>
 
-      <div class="target-code" id="targetCode">TARGET // CANOPUS-0941</div>
+      <div class="target-code" id="targetCode">TARGET // —</div>
 
       <!-- Main HUD Card -->
       <article class="hud-card is-active" id="hudCard">
@@ -60,31 +60,31 @@
           <div class="crosshair crosshair-horizontal"></div>
           <div class="crosshair crosshair-vertical"></div>
           <div class="procedural-star" id="proceduralStar"></div>
-          <div class="visual-label" id="visualLabel">SPECTRAL ANALYSIS // 0.65µm</div>
+          <div class="visual-label" id="visualLabel">SOURCE // GAIA DR3 · EPOCH J2016.0</div>
         </div>
 
         <div class="hud-content" id="hudContent">
-          <div class="hud-kicker" id="starKicker">SPECTRAL CLASS F0 II</div>
-          <div class="star-name" id="starName">BRIGHT GIANT</div>
-          <h1 id="starHeading">Canopus</h1>
-          <div class="hud-designation" id="starDesignation">Alpha Carinae · HD 45348 · HIP 30438</div>
+          <div class="hud-kicker" id="starKicker">ACQUIRING TARGET…</div>
+          <div class="star-name" id="starName">CATALOG TARGET</div>
+          <h1 id="starHeading">ACQUIRING TARGET…</h1>
+          <div class="hud-designation" id="starDesignation">—</div>
 
           <div class="hud-grid" id="hudGrid">
             <div class="metric" id="metricTemp">
-              <span>SURFACE TEMP</span>
-              <strong>7,350 K</strong>
-            </div>
-            <div class="metric" id="metricLum">
-              <span>LUMINOSITY</span>
-              <strong>10,700 L☉</strong>
+              <span>TEFF (GAIA GSP-PHOT)</span>
+              <strong>—</strong>
             </div>
             <div class="metric" id="metricDist">
-              <span>DISTANCE</span>
-              <strong>310 LY</strong>
+              <span>DISTANCE (DERIVED 1000/PARALLAX)</span>
+              <strong>—</strong>
             </div>
-            <div class="metric" id="metricMass">
-              <span>STELLAR MASS</span>
-              <strong>8.0 M☉</strong>
+            <div class="metric" id="metricParallax">
+              <span>PARALLAX</span>
+              <strong>—</strong>
+            </div>
+            <div class="metric" id="metricGmag">
+              <span>G MAG</span>
+              <strong>—</strong>
             </div>
           </div>
         </div>
@@ -117,8 +117,8 @@
 
       <!-- Bottom Observatory Meta -->
       <div class="observatory-meta observatory-meta-bottom" id="observatoryMetaBottom">
-        <span>COORDINATES // RA 06h 23m 57s · DEC -52° 41′ 45″</span>
-        <span>SPECTRAL RESOLUTION // 0.02 Å</span>
+        <span>COORDINATES // RA — · DEC —</span>
+        <span>SOURCE // GAIA DR3 · EPOCH J2016.0</span>
       </div>
     </div>
   </main>
@@ -192,9 +192,9 @@
       }
 
       document.querySelector("#metricTemp strong").textContent = star.temp;
-      document.querySelector("#metricLum strong").textContent  = star.lum;
       document.querySelector("#metricDist strong").textContent = star.dist;
-      document.querySelector("#metricMass strong").textContent = star.mass;
+      document.querySelector("#metricParallax strong").textContent = star.parallaxDisplay;
+      document.querySelector("#metricGmag strong").textContent = star.gmag;
 
       const starElement = document.getElementById("proceduralStar");
       starElement.style.background = star.bg;
@@ -202,7 +202,7 @@
 
       // Update visual label with real Gaia T_eff
       document.getElementById("visualLabel").textContent =
-        `GAIA DR3 // T_EFF ${Math.round(star.temperature).toLocaleString()} K`;
+        "SOURCE // GAIA DR3 · EPOCH J2016.0";
 
       if (closeSearchPanel) closeSearch();
     }
@@ -300,7 +300,7 @@
           '<li class="result-empty">LOADING GAIA DR3 CATALOG...</li>';
 
         // Load the real Gaia DR3 static catalog
-        stars = await loadGaiaStars("./gaia-stars-v1.json");
+        stars = await loadGaiaStars("./data/gaia-stars.json");
 
         renderResults();
 
@@ -340,10 +340,10 @@
             document.getElementById("starDesignation").textContent =
               "TARGET // NOT FOUND";
 
-            document.querySelector("#metricTemp strong").textContent = "---";
-            document.querySelector("#metricLum strong").textContent = "---";
-            document.querySelector("#metricDist strong").textContent = "---";
-            document.querySelector("#metricMass strong").textContent = "---";
+            document.querySelector("#metricTemp strong").textContent = "—";
+            document.querySelector("#metricDist strong").textContent = "—";
+            document.querySelector("#metricParallax strong").textContent = "—";
+            document.querySelector("#metricGmag strong").textContent = "—";
 
             const starElement = document.getElementById("proceduralStar");
             starElement.style.background =
@@ -357,6 +357,8 @@
           if (initialStar) {
             selectStar(initialStar, { closeSearchPanel: false });
           }
+        } else if (stars[0]) {
+          selectStar(stars[0], { closeSearchPanel: false });
         }
       } catch (error) {
         console.error("Failed to initialize StarScope:", error);

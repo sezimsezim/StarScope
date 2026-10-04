@@ -8,8 +8,8 @@ Queries the official ESA Gaia DR3 archive via astroquery.gaia (TAP+ protocol),
 extracts the 15 nearest valid stars (parallax > 200 mas), converts all units,
 and exports:
 
-  gaia-stars-v2.json   — static star catalog for explore.html
-  gaia-stars-v2.csv    — same data as a flat CSV for inspection
+  public/data/gaia-stars.json   — static star catalog for explore.html
+  public/data/gaia-stars.csv    — same data as a flat CSV for inspection
 
 UNIT CONVERSIONS (all documented below):
   Distance (parsecs)    : d_pc  = 1000 / parallax_mas
@@ -38,7 +38,7 @@ REQUIREMENTS:
 USAGE:
   python fetch_gaia_stars.py
 
-  Outputs gaia-stars-v2.json and gaia-stars-v2.csv in the same directory.
+  Outputs public/data/gaia-stars.json and public/data/gaia-stars.csv.
 """
 
 import csv
@@ -48,16 +48,18 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
 
 OUTPUT_DIR      = Path(__file__).parent          # same folder as this script
-JSON_OUT        = OUTPUT_DIR / "gaia-stars-v2.json"
-CSV_OUT         = OUTPUT_DIR / "gaia-stars-v2.csv"
+JSON_OUT        = OUTPUT_DIR / "public" / "data" / "gaia-stars.json"
+CSV_OUT         = OUTPUT_DIR / "public" / "data" / "gaia-stars.csv"
 
-PARALLAX_MIN_MAS = 200.0    # only stars closer than ~5 pc (16.3 ly)
-TARGET_COUNT     = 15       # how many stars we want in the final catalog
+PARALLAX_MIN_MAS = 200.0    # only nearest-sample stars closer than ~5 pc (16.3 ly)
+TARGET_COUNT     = 15       # minimum number of nearest-sample stars
 QUERY_LIMIT      = 40       # fetch extra rows to survive any nulls after filtering
 
 # IAU 2012 exact value (used consistently with gaia-adapter.js)
@@ -70,161 +72,149 @@ PC_TO_LY        = 3.26156
 # well-studied objects; names are sourced from SIMBAD / IAU catalog.
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Verified Gaia DR3 source_ids used for the curated sample (merged with nearest).
+CURATED_SOURCE_IDS: list[str] = [
+    "5853498713190525696",
+    "4472832130942575872",
+    "4810594479418041856",
+    "1872046609345556480",
+    "6553614253923452800",
+    "4034171629042489088",
+    "2835207319109249920",
+    "48026706558487040",
+    "66526127137440128",
+    "3735000631158990976",
+    "2428589330539122304",
+    "4017860992519744384",
+    "2577061092921353984",
+    "1907131544341497600",
+]
+
 KNOWN_NAMES: dict[str, dict] = {
-    # source_id : { name, aliases }
     "5853498713190525696": {
         "name": "Proxima Centauri",
-        "id":   "proxima-centauri",
-        "aliases": ["Alpha Centauri C", "GJ 551", "HIP 70890"],
+        "id": "proxima-centauri",
+        "aliases": ["Alpha Centauri C", "GJ 551"],
     },
     "4472832130942575872": {
         "name": "Barnard's Star",
-        "id":   "barnards-star",
-        "aliases": ["GJ 699", "HIP 87937"],
+        "id": "barnards-star",
+        "aliases": ["GJ 699"],
     },
-    # Wolf 359 — Gaia DR3 source_id confirmed via SIMBAD cross-match
-    "3864972938605115776": {
-        "name": "Wolf 359",
-        "id":   "wolf-359",
-        "aliases": ["CN Leonis", "GJ 406", "HIP 54035"],
-    },
-    # Lalande 21185
-    "757076635753284864": {
+    "762815470562110464": {
         "name": "Lalande 21185",
-        "id":   "lalande-21185",
-        "aliases": ["GJ 411", "HIP 54211"],
+        "id": "lalande-21185",
+        "aliases": ["GJ 411"],
     },
-    # Sirius A
-    "2947050466531873024": {
-        "name": "Sirius A",
-        "id":   "sirius-a",
-        "aliases": ["Alpha Canis Majoris", "GJ 244", "HIP 32349"],
-    },
-    # Luyten 726-8 A (BL Ceti)
-    "2452378776434477184": {
-        "name": "Luyten 726-8 A",
-        "id":   "luyten-726-8-a",
-        "aliases": ["BL Ceti", "GJ 65 A"],
-    },
-    # Luyten 726-8 B (UV Ceti)
-    "2452378776434477056": {
-        "name": "Luyten 726-8 B",
-        "id":   "luyten-726-8-b",
-        "aliases": ["UV Ceti", "GJ 65 B"],
-    },
-    # Ross 154
-    "6864024747528099456": {
+    "4075141768785646848": {
         "name": "Ross 154",
-        "id":   "ross-154",
-        "aliases": ["GJ 729", "HIP 92403"],
+        "id": "ross-154",
+        "aliases": ["GJ 729"],
     },
-    # Ross 248
-    "1984023335647898496": {
-        "name": "Ross 248",
-        "id":   "ross-248",
-        "aliases": ["GJ 905", "HIP 117473"],
-    },
-    # Epsilon Eridani
     "5164707970261890560": {
         "name": "Epsilon Eridani",
-        "id":   "epsilon-eridani",
-        "aliases": ["Ran", "GJ 144", "HIP 16537"],
+        "id": "epsilon-eridani",
+        "aliases": ["GJ 144"],
     },
-    # Lacaille 9352
     "6553614253923452800": {
         "name": "Lacaille 9352",
-        "id":   "lacaille-9352",
-        "aliases": ["GJ 887", "HIP 114046"],
+        "id": "lacaille-9352",
+        "aliases": ["GJ 887"],
     },
-    # Ross 128
-    "3748547471818399232": {
+    "3796072592206250624": {
         "name": "Ross 128",
-        "id":   "ross-128",
-        "aliases": ["GJ 447", "HIP 57548"],
+        "id": "ross-128",
+        "aliases": ["GJ 447"],
     },
-    # EZ Aquarii A/B/C — system; A is brightest
-    "6811645908153291520": {
-        "name": "EZ Aquarii A",
-        "id":   "ez-aquarii-a",
-        "aliases": ["GJ 866 A", "Luyten 789-6 A"],
+    "1872046574983497216": {
+        "name": "61 Cygni B",
+        "id": "61-cygni-b",
+        "aliases": ["GJ 820 B"],
     },
-    # 61 Cygni A
     "1872046609345556480": {
         "name": "61 Cygni A",
-        "id":   "61-cygni-a",
-        "aliases": ["GJ 820 A", "HIP 104214"],
+        "id": "61-cygni-a",
+        "aliases": ["GJ 820 A"],
     },
-    # 61 Cygni B
-    "1872046605050897152": {
-        "name": "61 Cygni B",
-        "id":   "61-cygni-b",
-        "aliases": ["GJ 820 B", "HIP 104217"],
-    },
-    # Procyon A
-    "2826783549695874560": {
-        "name": "Procyon A",
-        "id":   "procyon-a",
-        "aliases": ["Alpha Canis Minoris", "GJ 280", "HIP 37279"],
-    },
-    # Struve 2398 A (GJ 725 A)
-    "2106495504508892288": {
+    "2154880616774131840": {
         "name": "Struve 2398 A",
-        "id":   "struve-2398-a",
-        "aliases": ["GJ 725 A", "HD 173739"],
+        "id": "struve-2398-a",
+        "aliases": ["GJ 725 A"],
     },
-    # Struve 2398 B (GJ 725 B)
-    "2106495500214379648": {
+    "2154880616774131712": {
         "name": "Struve 2398 B",
-        "id":   "struve-2398-b",
+        "id": "struve-2398-b",
         "aliases": ["GJ 725 B"],
     },
-    # Groombridge 34 A (GJ 15 A)
-    "385333995591454464": {
+    "385334230892516480": {
         "name": "Groombridge 34 A",
-        "id":   "groombridge-34-a",
-        "aliases": ["GJ 15 A", "HIP 1803"],
+        "id": "groombridge-34-a",
+        "aliases": ["GJ 15 A"],
     },
-    # Groombridge 34 B (GJ 15 B)
-    "385333995591454336": {
+    "385334196532776576": {
         "name": "Groombridge 34 B",
-        "id":   "groombridge-34-b",
+        "id": "groombridge-34-b",
         "aliases": ["GJ 15 B"],
     },
-    # Epsilon Indi
     "6412595290592307840": {
-        "name": "Epsilon Indi",
-        "id":   "epsilon-indi",
-        "aliases": ["GJ 845", "HIP 108870"],
+        "name": "Epsilon Indi A",
+        "id": "epsilon-indi-a",
+        "aliases": ["GJ 845"],
     },
-    # DX Cancri
-    "704967037597308928": {
-        "name": "DX Cancri",
-        "id":   "dx-cancri",
-        "aliases": ["GJ 1111"],
+    "3139847906307949696": {
+        "name": "Luyten's Star",
+        "id": "luytens-star",
+        "aliases": ["GJ 273"],
     },
-    # Tau Ceti
-    "2452522676807599744": {
-        "name": "Tau Ceti",
-        "id":   "tau-ceti",
-        "aliases": ["GJ 71", "HIP 8102"],
-    },
-    # Kapteyn's Star
     "4810594479418041856": {
         "name": "Kapteyn's Star",
-        "id":   "kapteyns-star",
-        "aliases": ["GJ 191", "HIP 24186"],
+        "id": "kapteyns-star",
+        "aliases": ["GJ 191"],
     },
-    # Alpha Centauri A
-    "5853498713160606720": {
-        "name": "Alpha Centauri A",
-        "id":   "alpha-centauri-a",
-        "aliases": ["Rigil Kentaurus", "GJ 559 A", "HIP 71683"],
+    "4034171629042489088": {
+        "name": "Groombridge 1830",
+        "id": "groombridge-1830",
+        "aliases": ["GJ 451"],
     },
-    # Alpha Centauri B
-    "5853498713160606592": {
-        "name": "Alpha Centauri B",
-        "id":   "alpha-centauri-b",
-        "aliases": ["Toliman", "GJ 559 B", "HIP 71681"],
+    "2835207319109249920": {
+        "name": "51 Pegasi",
+        "id": "51-pegasi",
+        "aliases": ["HD 217014"],
+    },
+    "48026706558487040": {
+        "name": "Epsilon Tauri",
+        "id": "epsilon-tauri",
+        "aliases": ["Ain", "HD 28305"],
+    },
+    "66526127137440128": {
+        "name": "Atlas",
+        "id": "atlas",
+        "aliases": ["27 Tauri"],
+    },
+    "3735000631158990976": {
+        "name": "Gliese 486",
+        "id": "gliese-486",
+        "aliases": ["GJ 486"],
+    },
+    "2428589330539122304": {
+        "name": "3 Ceti",
+        "id": "3-ceti",
+        "aliases": [],
+    },
+    "4017860992519744384": {
+        "name": "Gliese 436",
+        "id": "gliese-436",
+        "aliases": ["GJ 436"],
+    },
+    "2577061092921353984": {
+        "name": "Zeta Piscium",
+        "id": "zeta-piscium",
+        "aliases": ["Revati"],
+    },
+    "1907131544341497600": {
+        "name": "1 Lacertae",
+        "id": "1-lacertae",
+        "aliases": [],
     },
 }
 
@@ -233,13 +223,20 @@ KNOWN_NAMES: dict[str, dict] = {
 # ADQL QUERY
 # ─────────────────────────────────────────────────────────────────────────────
 
-ADQL_QUERY = f"""
-SELECT TOP {QUERY_LIMIT}
+GAIA_COLUMNS = """
     source_id,
     ra,
     dec,
     parallax,
-    teff_gspphot
+    teff_gspphot,
+    phot_g_mean_mag,
+    parallax_error,
+    bp_rp
+""".strip()
+
+ADQL_QUERY = f"""
+SELECT TOP {QUERY_LIMIT}
+    {GAIA_COLUMNS}
 FROM
     gaiadr3.gaia_source
 WHERE
@@ -248,6 +245,15 @@ WHERE
     AND teff_gspphot IS NOT NULL
 ORDER BY
     parallax DESC
+""".strip()
+
+ADQL_CURATED = f"""
+SELECT
+    {GAIA_COLUMNS}
+FROM
+    gaiadr3.gaia_source
+WHERE
+    source_id IN ({",".join(CURATED_SOURCE_IDS)})
 """.strip()
 
 
@@ -319,6 +325,19 @@ def equatorial_to_cartesian(ra_deg: float, dec_deg: float, dist_pc: float) -> tu
     return (x, y, z)
 
 
+def maybe_float(value) -> float | None:
+    """Convert a Gaia TAP value to float, or None if masked/empty/non-finite."""
+    if value is None or np.ma.is_masked(value):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(number):
+        return None
+    return number
+
+
 def make_slug(name: str) -> str:
     """Convert a star name to a URL-friendly id slug."""
     return (
@@ -333,11 +352,11 @@ def make_slug(name: str) -> str:
 # GAIA QUERY
 # ─────────────────────────────────────────────────────────────────────────────
 
-def query_gaia() -> list[dict]:
+def query_gaia(adql: str, require_teff: bool = True) -> list[dict]:
     """
-    Run the ADQL query against the Gaia DR3 TAP service and return raw rows.
+    Run an ADQL query against the Gaia DR3 TAP service and return raw rows.
 
-    Returns a list of dicts with keys: source_id, ra, dec, parallax, teff_gspphot.
+    Returns a list of dicts with Gaia measurements. Masked TAP values become None.
     Raises RuntimeError on API or parsing failures.
     """
     try:
@@ -349,14 +368,14 @@ def query_gaia() -> list[dict]:
         )
 
     print("[pipeline] Connecting to Gaia DR3 TAP service...")
-    print(f"[pipeline] ADQL query:\n{ADQL_QUERY}\n")
+    print(f"[pipeline] ADQL query:\n{adql}\n")
 
     try:
         Gaia.MAIN_GAIA_TABLE = "gaiadr3.gaia_source"
         Gaia.ROW_LIMIT = QUERY_LIMIT
 
         job = Gaia.launch_job(
-            query=ADQL_QUERY,
+            query=adql,
             verbose=False,
         )
         results_table = job.get_results()
@@ -371,32 +390,40 @@ def query_gaia() -> list[dict]:
     rows = []
     for row in results_table:
         try:
-            source_id   = str(int(row["source_id"]))
-            ra          = float(row["ra"])
-            dec         = float(row["dec"])
-            parallax    = float(row["parallax"])
-            temperature = float(row["teff_gspphot"])
+            source_id = str(int(row["source_id"]))
         except (KeyError, ValueError, TypeError) as exc:
             print(f"  [skip] Malformed row (source_id={row.get('source_id', '?')}): {exc}")
             continue
 
-        # Guard: skip rows with invalid physics
-        if not math.isfinite(parallax) or parallax <= 0:
+        ra = maybe_float(row["ra"])
+        dec = maybe_float(row["dec"])
+        parallax = maybe_float(row["parallax"])
+        temperature = maybe_float(row["teff_gspphot"])
+        phot_g_mean_mag = maybe_float(row["phot_g_mean_mag"])
+        parallax_error = maybe_float(row["parallax_error"])
+        bp_rp = maybe_float(row["bp_rp"])
+
+        if parallax is None or parallax <= 0:
             print(f"  [skip] source_id={source_id} — invalid parallax ({parallax})")
             continue
-        if not math.isfinite(temperature) or temperature <= 0:
-            print(f"  [skip] source_id={source_id} — invalid temperature ({temperature})")
-            continue
-        if not math.isfinite(ra) or not math.isfinite(dec):
+        if ra is None or dec is None:
             print(f"  [skip] source_id={source_id} — invalid coordinates (RA={ra}, DEC={dec})")
             continue
+        if require_teff and (temperature is None or temperature <= 0):
+            print(f"  [skip] source_id={source_id} — invalid temperature ({temperature})")
+            continue
+        if temperature is not None and temperature <= 0:
+            temperature = None
 
         rows.append({
-            "source_id":   source_id,
-            "ra":          ra,
-            "dec":         dec,
-            "parallax":    parallax,
+            "source_id": source_id,
+            "ra": ra,
+            "dec": dec,
+            "parallax": parallax,
             "temperature": temperature,
+            "phot_g_mean_mag": phot_g_mean_mag,
+            "parallax_error": parallax_error,
+            "bp_rp": bp_rp,
         })
 
     if len(rows) == 0:
@@ -422,11 +449,11 @@ def build_star_entry(raw: dict, retrieved_utc: str) -> dict:
     temperature = raw["temperature"]
 
     # ── Distance ──────────────────────────────────────────────────────────────
-    dist_pc = parallax_to_pc(parallax)   # 1000 / parallax_mas  → parsecs
-    dist_ly = pc_to_ly(dist_pc)          # dist_pc * 3.26156    → light-years
+    distance_pc = parallax_to_pc(parallax)   # 1000 / parallax_mas  → parsecs
+    distance_ly = pc_to_ly(distance_pc)      # distance_pc * 3.26156 → light-years
 
     # ── Cartesian position ────────────────────────────────────────────────────
-    x, y, z = equatorial_to_cartesian(ra, dec, dist_pc)
+    x, y, z = equatorial_to_cartesian(ra, dec, distance_pc)
 
     # ── Common name lookup ────────────────────────────────────────────────────
     meta    = KNOWN_NAMES.get(source_id, {})
@@ -445,13 +472,17 @@ def build_star_entry(raw: dict, retrieved_utc: str) -> dict:
         "ra":            round(ra,          6),
         "dec":           round(dec,         6),
         "parallax":      round(parallax,    6),    # mas
-        "temperature":   round(temperature, 4),    # K  (teff_gspphot)
+        "temperature":   round(temperature, 4) if temperature is not None else None,
+        "phot_g_mean_mag": round(raw["phot_g_mean_mag"], 6) if raw["phot_g_mean_mag"] is not None else None,
+        "parallax_error": round(raw["parallax_error"], 6) if raw["parallax_error"] is not None else None,
+        "bp_rp":         round(raw["bp_rp"], 6) if raw["bp_rp"] is not None else None,
 
         # ── Derived distances ─────────────────────────────────────────────────
-        # d_pc = 1000 / parallax_mas   (parallax definition)
-        # d_ly = d_pc * 3.26156        (IAU 2012 exact)
-        "dist_pc":       round(dist_pc, 6),
-        "dist_ly":       round(dist_ly, 4),
+        # distance_pc = 1000 / parallax_mas   (parallax definition)
+        # distance_ly = distance_pc * 3.26156 (IAU 2012 exact)
+        "distance_pc":   round(distance_pc, 6),
+        "distance_ly":   round(distance_ly, 4),
+        "selection":     raw["selection"],
 
         # ── 3-D Cartesian position (equatorial frame, origin = Sun) ───────────
         # x = d_pc * cos(dec) * cos(ra)
@@ -473,6 +504,7 @@ def build_star_entry(raw: dict, retrieved_utc: str) -> dict:
 
 def write_json(stars: list[dict], path: Path) -> None:
     """Write the star catalog as a pretty-printed JSON array."""
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(stars, fh, indent=2, ensure_ascii=False)
     print(f"[pipeline] Wrote {len(stars)} stars -> {path}")
@@ -482,6 +514,8 @@ def write_csv(stars: list[dict], path: Path) -> None:
     """Write the star catalog as a flat CSV (aliases joined with '|')."""
     if not stars:
         return
+
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     # Flatten the aliases list to a pipe-delimited string for CSV
     flat_stars = []
@@ -509,37 +543,42 @@ def validate_catalog(stars: list[dict]) -> None:
     Sanity-check the final catalog.
     Raises ValueError with a descriptive message on any failure.
     """
-    if len(stars) != TARGET_COUNT:
-        raise ValueError(
-            f"Expected exactly {TARGET_COUNT} stars, got {len(stars)}. "
-            "Increase QUERY_LIMIT or check the Gaia archive."
-        )
-
     for i, s in enumerate(stars):
         sid = s.get("source_id", f"index_{i}")
 
-        if s["parallax"] <= PARALLAX_MIN_MAS:
+        if s["parallax"] <= 0:
+            raise ValueError(f"Star {sid} has non-positive parallax={s['parallax']} mas.")
+
+        if s.get("selection") == "nearest" and s["parallax"] <= PARALLAX_MIN_MAS:
             raise ValueError(
                 f"Star {sid} has parallax={s['parallax']} mas, "
                 f"which is ≤ {PARALLAX_MIN_MAS} mas filter threshold."
             )
 
-        if s["temperature"] <= 0:
+        if s["temperature"] is not None and s["temperature"] <= 0:
             raise ValueError(f"Star {sid} has non-positive temperature={s['temperature']} K.")
 
-        if s["dist_pc"] <= 0:
-            raise ValueError(f"Star {sid} has non-positive dist_pc={s['dist_pc']} pc.")
+        if s["distance_pc"] <= 0:
+            raise ValueError(f"Star {sid} has non-positive distance_pc={s['distance_pc']} pc.")
 
-        # Verify unit conversion consistency
         expected_pc = 1000.0 / s["parallax"]
-        if abs(s["dist_pc"] - expected_pc) > 1e-3:
+        if abs(s["distance_pc"] - expected_pc) > 1e-3:
             raise ValueError(
-                f"Star {sid}: dist_pc={s['dist_pc']:.6f} does not match "
+                f"Star {sid}: distance_pc={s['distance_pc']:.6f} does not match "
                 f"1000/parallax={expected_pc:.6f}."
             )
 
-    print(f"[pipeline] Validation passed: {len(stars)} stars, "
-          f"all parallax > {PARALLAX_MIN_MAS} mas, all temperatures > 0 K.")
+    nearest_count = sum(1 for s in stars if s.get("selection") == "nearest")
+    if nearest_count < TARGET_COUNT:
+        raise ValueError(
+            f"Expected at least {TARGET_COUNT} nearest stars, got {nearest_count}. "
+            "Increase QUERY_LIMIT or check the Gaia archive."
+        )
+
+    print(
+        f"[pipeline] Validation passed: {len(stars)} stars "
+        f"({nearest_count} nearest), all parallax > 0."
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -551,21 +590,36 @@ def main() -> None:
     print("  StarScope — Gaia DR3 Data Pipeline")
     print("=" * 60)
 
-    # 1. Query Gaia archive
+    # 1. Query Gaia archive: nearest sample + curated IDs
     try:
-        raw_rows = query_gaia()
+        nearest_rows = query_gaia(ADQL_QUERY, require_teff=True)
+        curated_rows = query_gaia(ADQL_CURATED, require_teff=False)
     except RuntimeError as exc:
         print(f"\n[ERROR] {exc}")
         sys.exit(1)
 
-    # 2. Keep only the TARGET_COUNT nearest (already sorted by Gaia DESC parallax)
-    raw_rows = raw_rows[:TARGET_COUNT]
-    print(f"[pipeline] Keeping top {len(raw_rows)} rows (closest stars).")
+    nearest_rows = nearest_rows[:TARGET_COUNT]
+    for row in nearest_rows:
+        row["selection"] = "nearest"
+    nearest_ids = {row["source_id"] for row in nearest_rows}
+    print(f"[pipeline] Keeping top {len(nearest_rows)} nearest stars.")
 
-    # 3. Build enriched catalog entries
+    merged_rows = list(nearest_rows)
+    extra_curated = 0
+    for row in curated_rows:
+        if row["source_id"] in nearest_ids:
+            continue
+        row["selection"] = "curated"
+        merged_rows.append(row)
+        extra_curated += 1
+    print(f"[pipeline] Added {extra_curated} curated stars not already in the nearest sample.")
+
+    merged_rows.sort(key=lambda row: row["parallax"], reverse=True)
+
+    # 2. Build enriched catalog entries
     retrieved_utc = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     stars = []
-    for raw in raw_rows:
+    for raw in merged_rows:
         try:
             entry = build_star_entry(raw, retrieved_utc)
             stars.append(entry)
@@ -576,28 +630,33 @@ def main() -> None:
         print("[ERROR] No stars could be built. Aborting.")
         sys.exit(1)
 
-    # 4. Validate
+    # 3. Validate
     try:
         validate_catalog(stars)
     except ValueError as exc:
         print(f"\n[ERROR] Validation failed: {exc}")
         sys.exit(1)
 
-    # 5. Write outputs
+    # 4. Write outputs
     write_json(stars, JSON_OUT)
     write_csv(stars,  CSV_OUT)
 
-    # 6. Print summary table
-    print("\n" + "=" * 60)
+    # 5. Print summary table
+    print("\n" + "=" * 70)
     print(f"  Catalog Summary  ({len(stars)} stars, Gaia DR3)")
-    print("=" * 60)
-    header = f"{'#':>2}  {'Name':<22}  {'Parallax (mas)':>14}  {'Dist (ly)':>10}  {'T_eff (K)':>10}"
+    print("=" * 70)
+    header = (
+        f"{'#':>2}  {'Name':<22}  {'Sel':<8}  {'Parallax (mas)':>14}  "
+        f"{'Dist (ly)':>10}  {'T_eff (K)':>10}  {'G mag':>7}"
+    )
     print(header)
     print("-" * len(header))
     for i, s in enumerate(stars, 1):
+        teff = f"{s['temperature']:.1f}" if s["temperature"] is not None else "—"
+        gmag = f"{s['phot_g_mean_mag']:.2f}" if s["phot_g_mean_mag"] is not None else "—"
         print(
-            f"{i:>2}  {s['name']:<22}  {s['parallax']:>14.3f}  "
-            f"{s['dist_ly']:>10.3f}  {s['temperature']:>10.1f}"
+            f"{i:>2}  {s['name']:<22}  {s['selection']:<8}  {s['parallax']:>14.3f}  "
+            f"{s['distance_ly']:>10.3f}  {teff:>10}  {gmag:>7}"
         )
 
     print("=" * 60)
