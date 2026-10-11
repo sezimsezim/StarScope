@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizeStar, raToHms, decToDms } from "../reference/gaia-adapter.js";
+import { normalizeStar, raToHms, decToDms } from "../gaia-adapter.js";
 
 test("distance is derived from parallax when distance fields are absent", () => {
   const star = normalizeStar({ source_id: "5853498713190525696", parallax: 768.0665, temperature: 2829.35 });
@@ -10,13 +10,24 @@ test("distance is derived from parallax when distance fields are absent", () => 
 });
 
 test("missing Teff stays null and is rendered as a dash, not 5000 K", () => {
-  const star = normalizeStar({ source_id: "1", parallax: 374.49, temperature: null });
+  const star = normalizeStar({
+    source_id: "1",
+    parallax: null,
+    temperature: null,
+    phot_g_mean_mag: null
+  });
   assert.equal(star.temperature, null);
   assert.equal(star.temp, "—");
+  assert.equal(star.parallax, null);
+  assert.equal(star.distance_pc, null);
+  assert.equal(star.distance_ly, null);
+  assert.equal(star.dist, "—");
+  assert.equal(star.parallaxDisplay, "—");
+  assert.equal(star.gmag, "—");
 });
 
 test("coordinate formatting never produces 60 seconds", () => {
   assert.equal(raToHms(217.39232147), "14h 29m 34s");
-  assert.equal(decToDms(-62.67607512), "−62° 40′ 34″");
+  assert.equal(decToDms(-62.67607512), "-62° 40′ 34″");
   assert.equal(raToHms(0.0041666), "00h 00m 01s");
 });

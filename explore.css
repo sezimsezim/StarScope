@@ -203,6 +203,61 @@
 
   min-width: 0;
 
+
+.star-map-canvas {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.star-map-canvas:active {
+  cursor: grabbing;
+}
+
+.map-controls {
+  position: absolute;
+  z-index: 4;
+  bottom: 48px;
+  left: 16px;
+  display: flex;
+  gap: 5px;
+}
+
+.map-controls button {
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid rgba(234, 243, 255, 0.18);
+  background: rgba(3, 7, 13, 0.78);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.map-controls button[aria-pressed="true"] {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.map-controls button:focus-visible,
+.archive-links a:focus-visible,
+.star-map-canvas:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.map-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
   display: grid;
 
   place-items: center;
@@ -278,91 +333,6 @@
 .crosshair-vertical {
   width: 1px;
   height: 72%;
-}
-
-
-/* ---------- STAR ---------- */
-
-.procedural-star {
-  --star-size: 220px;
-
-  position: relative;
-
-  z-index: 5;
-
-  width: var(--star-size);
-  height: var(--star-size);
-
-  border-radius: 50%;
-
-  flex: 0 0 auto;
-
-  background:
-    radial-gradient(
-      circle at 32% 30%,
-      #ffffff 10%,
-      #dfeeff 45%,
-      #4facfe 100%
-    );
-
-  box-shadow:
-    0 0 24px var(--star-glow, rgba(79, 172, 254, 0.72)),
-    0 0 70px rgba(79, 172, 254, 0.2),
-    inset -18px -20px 28px rgba(0, 0, 0, 0.12);
-
-  animation:
-    starPulse 3.8s ease-in-out infinite alternate;
-
-  transition:
-    width 260ms ease,
-    height 260ms ease,
-    background 260ms ease,
-    box-shadow 260ms ease;
-}
-
-
-.procedural-star::before {
-  content: "";
-
-  position: absolute;
-
-  inset: -15px;
-
-  border-radius: 50%;
-
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-
-.procedural-star::after {
-  content: "";
-
-  position: absolute;
-
-  inset: -30px;
-
-  border-radius: 50%;
-
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-
-@keyframes starPulse {
-  0% {
-    transform: scale(0.985);
-
-    filter:
-      brightness(0.98)
-      saturate(0.95);
-  }
-
-  100% {
-    transform: scale(1.015);
-
-    filter:
-      brightness(1.08)
-      saturate(1.08);
-  }
 }
 
 
@@ -465,6 +435,23 @@
 
   background:
     rgba(234, 243, 255, 0.08);
+}
+
+.archive-links {
+  display: flex;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.archive-links a {
+  color: var(--cyan);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+}
+
+.archive-links a:hover {
+  color: var(--ink);
 }
 
 
@@ -945,6 +932,11 @@
     border-bottom: 1px solid var(--line);
   }
 
+  .map-controls {
+    bottom: 42px;
+    left: 12px;
+  }
+
 
   .orbit-3 {
     width: 390px;
@@ -1039,10 +1031,14 @@
     min-height: 250px;
   }
 
+  .map-controls {
+    gap: 3px;
+  }
 
-  .procedural-star {
-    max-width: 52vw;
-    max-height: 52vw;
+  .map-controls button {
+    min-height: 28px;
+    padding: 0 6px;
+    font-size: 7px;
   }
 
 

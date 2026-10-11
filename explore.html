@@ -59,7 +59,11 @@
           <div class="orbit orbit-3"></div>
           <div class="crosshair crosshair-horizontal"></div>
           <div class="crosshair crosshair-vertical"></div>
-          <div class="procedural-star" id="proceduralStar"></div>
+          <div class="map-controls" aria-label="Star map controls">
+            <button type="button" data-map-mode="nearby" aria-pressed="true">NEARBY</button>
+            <button type="button" data-map-mode="catalog" aria-pressed="false">CATALOG</button>
+            <button type="button" id="mapReset" aria-label="Reset map view">RESET</button>
+          </div>
           <div class="visual-label" id="visualLabel">SOURCE // GAIA DR3 · EPOCH J2016.0</div>
         </div>
 
@@ -87,6 +91,11 @@
               <strong>—</strong>
             </div>
           </div>
+
+          <nav class="archive-links" aria-label="External astronomical archives">
+            <a id="simbadLink" href="#" target="_blank" rel="noopener noreferrer">SIMBAD ↗</a>
+            <a id="vizierLink" href="#" target="_blank" rel="noopener noreferrer">VizieR ↗</a>
+          </nav>
         </div>
       </article>
 
@@ -125,14 +134,29 @@
 
   <script type="module">
     import { loadGaiaStars } from "./gaia-adapter.js";
+    import { searchStars } from "./js/search.js";
 
     const searchWrapper  = document.getElementById("searchWrapper");
     const searchTrigger  = document.getElementById("searchTrigger");
     const searchClose    = document.getElementById("searchClose");
     const starSearch     = document.getElementById("starSearch");
     const searchResults  = document.getElementById("searchResults");
+    const mapModeButtons = document.querySelectorAll("[data-map-mode]");
+    const visualLabel    = document.getElementById("visualLabel");
 
     let stars = [];
+    let starMap = null;
+    let selectedStarId = null;
+
+    function getStarId(star) {
+      return String(star.source_id || star.id || "");
+    }
+
+    function updateResultSelection() {
+      searchResults.querySelectorAll(".result-item").forEach((button) => {
+        button.classList.toggle("is-selected", button.dataset.starId === selectedStarId);
+      });
+    }
 
     // ========================================================
     // SEARCH UI
@@ -179,7 +203,8 @@
     // SELECT STAR
     // ========================================================
 
-    function selectStar(star, { closeSearchPanel = true } = {}) {
+    function selectStar(star, { closeSearchPanel = true, focusMap = true } = {}) {
+      selectedStarId = getStarId(star);
       document.getElementById("starHeading").textContent    = star.name;
       document.getElementById("starKicker").textContent     = star.kicker;
       document.getElementById("starName").textContent       = star.category;
@@ -196,9 +221,17 @@
       document.querySelector("#metricParallax strong").textContent = star.parallaxDisplay;
       document.querySelector("#metricGmag strong").textContent = star.gmag;
 
-      const starElement = document.getElementById("proceduralStar");
-      starElement.style.background = star.bg;
-      starElement.style.setProperty("--star-glow", star.glow);
+      starMap?.setSelectedStar(selectedStarId, { focus: focusMap });
+      updateResultSelection();
+
+      const simbadUrl = new URL("https://simbad.cds.unistra.fr/simbad/sim-id");
+      simbadUrl.searchParams.set("Ident", star.name || `Gaia DR3 ${star.source_id}`);
+      document.getElementById("simbadLink").href = simbadUrl.href;
+
+      const vizierUrl = new URL("https://vizier.cds.unistra.fr/viz-bin/VizieR");
+      vizierUrl.searchParams.set("-source", "I/355/gaiadr3");
+      vizierUrl.searchParams.set("Source", star.source_id);
+      document.getElementById("vizierLink").href = vizierUrl.href;
 
       // Update visual label with real Gaia T_eff
       document.getElementById("visualLabel").textContent =
@@ -207,16 +240,24 @@
       if (closeSearchPanel) closeSearch();
     }
 
+    mapModeButtons.forEach((button) => {
+      button.addEventListener("click", () => starMap?.setMode(button.dataset.mapMode));
+    });
+
+    document.getElementById("mapReset").addEventListener("click", () => starMap?.resetView());
+
     // ========================================================
     // SEARCH RESULTS
     // ========================================================
 
-    function createResultItem(star, index) {
+    function createResultItem(star) {
       const li     = document.createElement("li");
       const button = document.createElement("button");
 
       button.type      = "button";
-      button.className = `result-item${index === 0 ? " is-selected" : ""}`;
+      button.className = "result-item";
+      button.dataset.starId = getStarId(star);
+      button.classList.toggle("is-selected", button.dataset.starId === selectedStarId);
       button.setAttribute("role", "option");
 
       // Colored dot
@@ -257,19 +298,7 @@
     }
 
     function renderResults(filterText = "") {
-      const query = filterText.trim().toLowerCase();
-
-      const filtered = stars.filter((star) => {
-        const searchableText = [
-          star.name,
-          star.id,
-          star.source_id,
-          ...(star.aliases || []),
-        ]
-          .join(" ")
-          .toLowerCase();
-        return searchableText.includes(query);
-      });
+      const filtered = searchStars(stars, filterText);
 
       searchResults.innerHTML = "";
 
@@ -281,8 +310,8 @@
         return;
       }
 
-      filtered.forEach((star, index) => {
-        searchResults.appendChild(createResultItem(star, index));
+      filtered.forEach((star) => {
+        searchResults.appendChild(createResultItem(star));
       });
     }
 
@@ -302,64 +331,52 @@
         // Load the real Gaia DR3 static catalog
         stars = await loadGaiaStars("./data/gaia-stars.json");
 
+        try {
+          const { createStarMap } = await import("./js/star-map.js");
+          starMap = createStarMap({
+            container: document.getElementById("hudVisual"),
+            stars,
+            getSelectedId: () => selectedStarId,
+            onSelect: (star) => selectStar(star, { closeSearchPanel: false, focusMap: false }),
+            onModeChange: (mode) => {
+              mapModeButtons.forEach((button) => {
+                const active = button.dataset.mapMode === mode;
+                button.setAttribute("aria-pressed", String(active));
+              });
+            }
+          });
+        } catch (error) {
+          console.error("Failed to initialize 3D star map:", error);
+          visualLabel.textContent = "3D MAP UNAVAILABLE // USE CATALOG SEARCH";
+          mapModeButtons.forEach((button) => { button.disabled = true; });
+          document.getElementById("mapReset").disabled = true;
+        }
+
         renderResults();
 
         // Handle ?q= deep-link from index.html search bar
         const params = new URLSearchParams(window.location.search);
         const initialQuery = params.get("q");
-        let initialStar = stars[0];
+        const initialStar = initialQuery
+          ? searchStars(stars, initialQuery, 1)[0]
+          : stars[0];
 
-        if (initialQuery) {
-          const query = initialQuery.trim().toLowerCase();
-
-          const matchingStar = stars.find((star) => {
-            const text = [
-              star.name,
-              star.id,
-              star.source_id,
-              ...(star.aliases || []),
-            ]
-              .join(" ")
-              .toLowerCase();
-
-            return text.includes(query);
-          });
-
-          if (matchingStar) {
-            initialStar = matchingStar;
-          } else {
-            // Query string provided but no star matched - show NOT FOUND state
-            initialStar = null;
-
-            document.getElementById("starHeading").textContent =
-              "STAR NOT FOUND";
-            document.getElementById("starKicker").textContent =
-              "ERROR 404";
-            document.getElementById("starName").textContent =
-              "Target not found in the GAIA DR3 catalog";
-            document.getElementById("starDesignation").textContent =
-              "TARGET // NOT FOUND";
-
-            document.querySelector("#metricTemp strong").textContent = "—";
-            document.querySelector("#metricDist strong").textContent = "—";
-            document.querySelector("#metricParallax strong").textContent = "—";
-            document.querySelector("#metricGmag strong").textContent = "—";
-
-            const starElement = document.getElementById("proceduralStar");
-            starElement.style.background =
-              "rgba(255, 255, 255, 0.1)";
-            starElement.style.setProperty(
-              "--star-glow",
-              "rgba(255, 255, 255, 0.2)"
-            );
-          }
-
-          if (initialStar) {
-            selectStar(initialStar, { closeSearchPanel: false });
-          }
-        } else if (stars[0]) {
-          selectStar(stars[0], { closeSearchPanel: false });
+        if (initialStar) {
+          selectStar(initialStar, { closeSearchPanel: false });
+        } else if (initialQuery) {
+          selectedStarId = null;
+          document.getElementById("starHeading").textContent = "STAR NOT FOUND";
+          document.getElementById("starKicker").textContent = "ERROR 404";
+          document.getElementById("starName").textContent = "Target not found in the GAIA DR3 catalog";
+          document.getElementById("starDesignation").textContent = "TARGET // NOT FOUND";
+          document.querySelector("#metricTemp strong").textContent = "—";
+          document.querySelector("#metricDist strong").textContent = "—";
+          document.querySelector("#metricParallax strong").textContent = "—";
+          document.querySelector("#metricGmag strong").textContent = "—";
+          starMap?.setSelectedStar(null);
         }
+
+        renderResults(initialQuery || "");
       } catch (error) {
         console.error("Failed to initialize StarScope:", error);
 

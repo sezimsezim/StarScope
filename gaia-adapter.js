@@ -31,7 +31,7 @@ export function raToHms(raDeg) {
 }
 
 export function decToDms(decDeg) {
-  const sign = Number(decDeg) >= 0 ? "+" : "−";
+  const sign = Number(decDeg) >= 0 ? "+" : "-";
   const totalSeconds = Math.round(Math.abs(Number(decDeg)) * 3600);
   const d = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);

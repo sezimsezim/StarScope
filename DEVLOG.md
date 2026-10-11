@@ -34,3 +34,7 @@
 **Learned:** Leftover template files can corrupt Vite dev server resolution. Configuring explicit Rollup input points in `vite.config.ts` guarantees clean multi-page bundling for Vanilla JS apps.
 
 **Next:** Remove remaining dead prototype files (STEP 4) and generate verified Gaia DR3 catalog (STEP 7)
+
+## 2026-10-11 — Поиск и выбор звезды
+
+Объединил поиск в одном production-модуле, связал выбранную звезду в результатах, HUD и 3D-карте, подключил тесты к рабочим модулям и добавил `npm test`. Сборка проходит, все 25 записей каталога подтверждены Gaia DR3. Обновил общий текстовый bundle проекта.
