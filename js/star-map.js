@@ -28,9 +28,9 @@ function createSelectionTexture() {
   canvas.height = 64;
 
   const context = canvas.getContext("2d");
-  context.strokeStyle = "#6fe7dd";
+  context.strokeStyle = "#ffffff";
   context.lineWidth = 2;
-  context.shadowColor = "#6fe7dd";
+  context.shadowColor = "#ffffff";
   context.shadowBlur = 8;
   context.beginPath();
   context.arc(32, 32, 24, 0, Math.PI * 2);
@@ -50,11 +50,14 @@ export function createStarMap({ container, stars, onSelect, onModeChange, getSel
   const indexById = new Map(entries.map((entry, index) => [starId(entry.star), index]));
   const positions = new Float32Array(entries.length * 3);
   const colors = new Float32Array(entries.length * 3);
+  const magnitudes = new Float32Array(entries.length);
 
   entries.forEach(({ star, position }, index) => {
     position.toArray(positions, index * 3);
     const color = new THREE.Color(star.dotColor || "#dce8f5");
     color.toArray(colors, index * 3);
+    const magnitude = star.phot_g_mean_mag;
+    magnitudes[index] = Number.isFinite(magnitude) ? magnitude : 99;
   });
 
   const renderer = new THREE.WebGLRenderer({
@@ -74,6 +77,7 @@ export function createStarMap({ container, stars, onSelect, onModeChange, getSel
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute("aMagnitude", new THREE.BufferAttribute(magnitudes, 1));
   geometry.setDrawRange(0, nearestCount || entries.length);
 
   const pointMaterial = new THREE.ShaderMaterial({
@@ -81,23 +85,27 @@ export function createStarMap({ container, stars, onSelect, onModeChange, getSel
     vertexShader: `
       uniform float uPixelRatio;
       attribute vec3 color;
+      attribute float aMagnitude;
       varying vec3 vColor;
+      varying float vBrightness;
 
       void main() {
         vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
         gl_Position = projectionMatrix * viewPosition;
+        vBrightness = aMagnitude < 90.0 ? clamp((12.0 - aMagnitude) / 9.0, 0.08, 1.0) : 0.35;
         gl_PointSize = clamp(24.0 / sqrt(max(1.0, -viewPosition.z)), 2.0, 12.0) * uPixelRatio;
         vColor = color;
       }
     `,
     fragmentShader: `
       varying vec3 vColor;
+      varying float vBrightness;
 
       void main() {
         float radius = length(gl_PointCoord - vec2(0.5)) * 2.0;
         float core = 1.0 - smoothstep(0.12, 0.55, radius);
         float halo = 1.0 - smoothstep(0.28, 1.0, radius);
-        float alpha = max(core, halo * 0.4);
+        float alpha = max(core, halo * 0.4) * mix(0.24, 1.0, vBrightness);
         vec3 color = mix(vColor, vec3(1.0), core * 0.45);
         gl_FragColor = vec4(color, alpha);
         #include <tonemapping_fragment>
@@ -162,6 +170,7 @@ export function createStarMap({ container, stars, onSelect, onModeChange, getSel
     }
 
     marker.position.fromArray(positions, index * 3);
+    markerMaterial.color.set(entries[index].star.dotColor || "#aab7c8");
     const distance = camera.position.distanceTo(controls.target);
     const worldHeight = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     const markerSize = worldHeight / Math.max(1, container.clientHeight) * 26;

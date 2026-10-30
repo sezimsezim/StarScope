@@ -42,93 +42,112 @@
 <body>
   <main class="explore-shell" id="exploreShell">
     <div class="observatory" id="observatory">
-      <!-- Top Observatory Meta -->
-      <div class="observatory-meta observatory-meta-top" id="observatoryMetaTop">
-        <a href="index.html" style="color: var(--cyan); text-decoration: none; font-weight: bold; letter-spacing: 1px;">‹ LANDING</a>
-        <span>SYSTEM // MILKY WAY (ORION ARM)</span>
-        <span>OBSERVATORY // ONLINE</span>
-      </div>
+      <header class="observatory-header" id="observatoryMetaTop">
+        <a class="observatory-brand" href="index.html" aria-label="Return to StarScope landing page">
+          <span class="brand-mark" aria-hidden="true">✳</span>
+          <span>STARSCOPE <small>FIELD OBSERVATORY</small></span>
+        </a>
+        <div class="header-readout">
+          <span>ESA / GAIA DR3</span>
+          <span>EQUATORIAL FRAME / J2016.0</span>
+        </div>
+        <a class="landing-link" href="index.html">‹ LANDING</a>
+      </header>
 
-      <div class="target-code" id="targetCode">TARGET // —</div>
+      <section class="explore-toolbar" aria-labelledby="pageTitle">
+        <div class="page-heading">
+          <p class="section-kicker">OBSERVATORY / STELLAR CARTOGRAPHY</p>
+          <h1 id="pageTitle">Explore the field</h1>
+          <p class="page-summary"><span id="catalogCount">GAIA DR3 CATALOG</span><span class="summary-divider">/</span> Sun-centered 3D positions in parsecs</p>
+        </div>
 
-      <!-- Main HUD Card -->
+        <div class="search-wrapper" id="searchWrapper">
+          <button class="search-trigger" id="searchTrigger" type="button" aria-expanded="false" aria-haspopup="dialog">
+            <span class="search-trigger-icon" aria-hidden="true">⌕</span>
+            <span>SEARCH THE CATALOG</span>
+            <span class="search-key" aria-hidden="true">↵</span>
+          </button>
+
+          <div class="search-panel" id="searchPanel" role="dialog" aria-modal="false" aria-label="Search Gaia stellar catalog">
+            <label class="search-label" for="starSearch">NAME / DESIGNATION / GAIA SOURCE ID</label>
+            <div class="search-input-wrap">
+              <span class="search-prefix" aria-hidden="true">›</span>
+              <input type="text" id="starSearch" placeholder="Try Barnard's Star or 5853498713190525696" autocomplete="off" spellcheck="false" />
+              <button class="search-close" id="searchClose" type="button" aria-label="Close search">ESC</button>
+            </div>
+            <ul class="search-results" id="searchResults" role="listbox" aria-label="Matching stars"></ul>
+          </div>
+        </div>
+      </section>
+
       <article class="hud-card is-active" id="hudCard">
-        <div class="hud-visual" id="hudVisual">
-          <div class="orbit orbit-1"></div>
-          <div class="orbit orbit-2"></div>
-          <div class="orbit orbit-3"></div>
-          <div class="crosshair crosshair-horizontal"></div>
-          <div class="crosshair crosshair-vertical"></div>
+        <section class="hud-visual" id="hudVisual" aria-label="Three-dimensional Gaia star map">
+          <div class="map-heading">
+            <div>
+              <p class="section-kicker">LIVE STAR FIELD</p>
+              <h2>Solar neighborhood</h2>
+              <span class="map-frame-tag">X / Y / Z · PARSECS · SUN AT ORIGIN</span>
+            </div>
+          </div>
+
+          <div class="orbit orbit-1" aria-hidden="true"></div>
+          <div class="orbit orbit-2" aria-hidden="true"></div>
+          <div class="orbit orbit-3" aria-hidden="true"></div>
+          <div class="crosshair crosshair-horizontal" aria-hidden="true"></div>
+          <div class="crosshair crosshair-vertical" aria-hidden="true"></div>
+
           <div class="map-controls" aria-label="Star map controls">
-            <button type="button" data-map-mode="nearby" aria-pressed="true">NEARBY</button>
-            <button type="button" data-map-mode="catalog" aria-pressed="false">CATALOG</button>
-            <button type="button" id="mapReset" aria-label="Reset map view">RESET</button>
-          </div>
-          <div class="visual-label" id="visualLabel">SOURCE // GAIA DR3 · EPOCH J2016.0</div>
-        </div>
-
-        <div class="hud-content" id="hudContent">
-          <div class="hud-kicker" id="starKicker">ACQUIRING TARGET…</div>
-          <div class="star-name" id="starName">CATALOG TARGET</div>
-          <h1 id="starHeading">ACQUIRING TARGET…</h1>
-          <div class="hud-designation" id="starDesignation">—</div>
-
-          <div class="hud-grid" id="hudGrid">
-            <div class="metric" id="metricTemp">
-              <span>TEFF (GAIA GSP-PHOT)</span>
-              <strong>—</strong>
+            <div class="map-mode-switch" role="group" aria-label="Visible catalog subset">
+              <button type="button" data-map-mode="nearby" aria-pressed="true">NEARBY</button>
+              <button type="button" data-map-mode="catalog" aria-pressed="false">CATALOG</button>
             </div>
-            <div class="metric" id="metricDist">
-              <span>DISTANCE (DERIVED 1000/PARALLAX)</span>
-              <strong>—</strong>
-            </div>
-            <div class="metric" id="metricParallax">
-              <span>PARALLAX</span>
-              <strong>—</strong>
-            </div>
-            <div class="metric" id="metricGmag">
-              <span>G MAG</span>
-              <strong>—</strong>
-            </div>
+            <button class="map-reset" type="button" id="mapReset" aria-label="Reset map camera">RESET VIEW</button>
           </div>
 
-          <nav class="archive-links" aria-label="External astronomical archives">
-            <a id="simbadLink" href="#" target="_blank" rel="noopener noreferrer">SIMBAD ↗</a>
-            <a id="vizierLink" href="#" target="_blank" rel="noopener noreferrer">VizieR ↗</a>
+          <div class="map-legend" aria-label="Approximate display hue, primarily inferred from Gaia effective temperature">
+            <span>HOTTER</span><span class="temperature-ramp" aria-hidden="true"></span><span>COOLER</span>
+          </div>
+          <div class="visual-label" id="visualLabel">HUE ≈ Teff · G MODULATES GLOW · NOT TO SCALE</div>
+          <div class="map-coordinates" aria-hidden="true"><span>X → RA 0H</span><span>Y → RA 6H</span><span>Z → DEC +90°</span></div>
+        </section>
+
+        <aside class="hud-content" id="hudContent" aria-labelledby="starHeading">
+          <div class="selection-heading">
+            <span class="star-color-swatch" id="starColorSwatch" aria-hidden="true"></span>
+            <div class="selection-copy">
+              <p class="hud-kicker" id="starKicker">ACQUIRING TARGET…</p>
+              <p class="star-name" id="starName">CATALOG TARGET</p>
+            </div>
+            <span class="selection-index" aria-hidden="true">01</span>
+          </div>
+          <h2 id="starHeading">ACQUIRING TARGET…</h2>
+          <p class="hud-designation" id="starDesignation">—</p>
+          <p class="color-note" id="colorNote">Stellar hue is an approximation derived from Gaia catalog parameters.</p>
+
+          <div class="hud-grid" id="hudGrid" aria-label="Selected star measurements">
+            <div class="metric" id="metricTemp"><span>GAIA T<sub>eff</sub> · GSP-PHOT</span><strong>—</strong></div>
+            <div class="metric" id="metricDist"><span>DISTANCE · DERIVED</span><strong>—</strong></div>
+            <div class="metric" id="metricParallax"><span>PARALLAX · mas</span><strong>—</strong></div>
+            <div class="metric" id="metricGmag"><span>APPARENT G · mag</span><strong>—</strong></div>
+            <div class="metric metric-color-index" id="metricBpRp"><span>BP − RP · mag</span><strong>—</strong></div>
+          </div>
+
+          <p class="measurement-note">Distance uses inverse parallax (1000 / mas). BP − RP is Gaia's measured photometric color index; extinction may redden it. Apparent G affects glow only, not stellar radius; the map is not to scale.</p>
+          <nav class="archive-links" aria-label="Open this source in astronomical archives">
+            <a id="simbadLink" href="#" target="_blank" rel="noopener noreferrer">SIMBAD <span aria-hidden="true">↗</span></a>
+            <a id="vizierLink" href="#" target="_blank" rel="noopener noreferrer">VizieR <span aria-hidden="true">↗</span></a>
+            <a id="gaiaLink" href="#" target="_blank" rel="noopener noreferrer">GAIA TAP <span aria-hidden="true">↗</span></a>
           </nav>
-        </div>
+          <div class="observatory-meta-bottom" id="observatoryMetaBottom">
+            <span>COORDINATES // RA — · DEC —</span>
+          </div>
+        </aside>
       </article>
 
-      <!-- Search Button & Panel -->
-      <div class="search-wrapper" id="searchWrapper">
-        <button class="search-trigger" id="searchTrigger" type="button" aria-expanded="false" aria-haspopup="dialog">
-          <span class="search-trigger-icon">⌖</span>
-          <span>SEARCH TARGET</span>
-        </button>
-
-        <div class="search-panel" id="searchPanel" role="dialog" aria-modal="false" aria-label="Search celestial targets">
-          <label class="search-label" for="starSearch">CELESTIAL CATALOG SEARCH</label>
-          <div class="search-input-wrap">
-            <span class="search-prefix">›</span>
-            <input
-              type="text"
-              id="starSearch"
-              placeholder="Search name, designation, or Bayer..."
-              autocomplete="off"
-              spellcheck="false"
-            />
-            <button class="search-close" id="searchClose" type="button" aria-label="Close search">✕ ESC</button>
-          </div>
-
-          <ul class="search-results" id="searchResults" role="listbox"></ul>
-        </div>
-      </div>
-
-      <!-- Bottom Observatory Meta -->
-      <div class="observatory-meta observatory-meta-bottom" id="observatoryMetaBottom">
-        <span>COORDINATES // RA — · DEC —</span>
-        <span>SOURCE // GAIA DR3 · EPOCH J2016.0</span>
-      </div>
+      <footer class="observatory-footer">
+        <span>STAR POSITIONS · EQUATORIAL CARTESIAN FRAME · SUN AT ORIGIN</span>
+        <span id="targetCode">TARGET // —</span>
+      </footer>
     </div>
   </main>
 
@@ -143,6 +162,7 @@
     const searchResults  = document.getElementById("searchResults");
     const mapModeButtons = document.querySelectorAll("[data-map-mode]");
     const visualLabel    = document.getElementById("visualLabel");
+    const catalogCount   = document.getElementById("catalogCount");
 
     let stars = [];
     let starMap = null;
@@ -220,6 +240,9 @@
       document.querySelector("#metricDist strong").textContent = star.dist;
       document.querySelector("#metricParallax strong").textContent = star.parallaxDisplay;
       document.querySelector("#metricGmag strong").textContent = star.gmag;
+      document.querySelector("#metricBpRp strong").textContent = star.bp_rp === null ? "—" : star.bp_rp.toFixed(2);
+      document.getElementById("hudContent").style.setProperty("--star-color", star.dotColor);
+      document.getElementById("colorNote").textContent = star.colorLabel;
 
       starMap?.setSelectedStar(selectedStarId, { focus: focusMap });
       updateResultSelection();
@@ -233,9 +256,15 @@
       vizierUrl.searchParams.set("Source", star.source_id);
       document.getElementById("vizierLink").href = vizierUrl.href;
 
+      const gaiaUrl = new URL("https://gea.esac.esa.int/tap-server/tap/sync");
+      gaiaUrl.searchParams.set("REQUEST", "doQuery");
+      gaiaUrl.searchParams.set("LANG", "ADQL");
+      gaiaUrl.searchParams.set("FORMAT", "csv");
+      gaiaUrl.searchParams.set("QUERY", `SELECT source_id, ra, dec, parallax FROM gaiadr3.gaia_source WHERE source_id = ${star.source_id}`);
+      document.getElementById("gaiaLink").href = gaiaUrl.href;
+
       // Update visual label with real Gaia T_eff
-      document.getElementById("visualLabel").textContent =
-        "SOURCE // GAIA DR3 · EPOCH J2016.0";
+      visualLabel.textContent = star.colorLabel.toUpperCase();
 
       if (closeSearchPanel) closeSearch();
     }
@@ -272,7 +301,7 @@
 
       const resultDesignation = document.createElement("span");
       resultDesignation.className   = "result-designation";
-      resultDesignation.textContent = `${star.designation} · ${star.temperatureBand}-TYPE`;
+      resultDesignation.textContent = `${star.designation} · ${star.temperatureBand === "?" ? "CLASS UNKNOWN" : `${star.temperatureBand}-TYPE`}`;
 
       const resultCopy = document.createElement("div");
       resultCopy.className = "result-copy";
@@ -330,6 +359,7 @@
 
         // Load the real Gaia DR3 static catalog
         stars = await loadGaiaStars("./data/gaia-stars.json");
+        catalogCount.textContent = `${stars.length} VERIFIED SOURCES`;
 
         try {
           const { createStarMap } = await import("./js/star-map.js");
@@ -373,6 +403,9 @@
           document.querySelector("#metricDist strong").textContent = "—";
           document.querySelector("#metricParallax strong").textContent = "—";
           document.querySelector("#metricGmag strong").textContent = "—";
+          document.querySelector("#metricBpRp strong").textContent = "—";
+          document.getElementById("hudContent").style.setProperty("--star-color", "#aab7c8");
+          document.getElementById("colorNote").textContent = "No catalog measurements available for this target.";
           starMap?.setSelectedStar(null);
         }
 

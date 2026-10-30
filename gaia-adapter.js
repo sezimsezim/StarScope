@@ -1,3 +1,5 @@
+import { getStellarAppearance } from "./js/stellar-color.js";
+
 /**
  * gaia-adapter.js
  * Adapter for loading and normalizing the verified Gaia DR3 catalog
@@ -8,13 +10,6 @@
  */
 
 const PC_TO_LY = 3.26156;
-const UNKNOWN_STYLE = {
-  band: "?",
-  bg: "rgba(255, 255, 255, 0.1)",
-  glow: "rgba(255, 255, 255, 0.2)",
-  dotColor: "#8c9bb1"
-};
-
 function toNumberOrNull(value) {
   if (value === null || value === undefined || value === "") return null;
   const n = Number(value);
@@ -39,69 +34,15 @@ export function decToDms(decDeg) {
   return `${sign}${String(d).padStart(2, "0")}° ${String(m).padStart(2, "0")}′ ${String(s).padStart(2, "0")}″`;
 }
 
-function getSpectralInfo(teff) {
-  if (teff === null) return { ...UNKNOWN_STYLE };
-
-  if (teff >= 30000) {
-    return {
-      band: "O",
-      bg: "radial-gradient(circle at 32% 30%, #ffffff 10%, #bfdbfe 45%, #3b82f6 100%)",
-      glow: "rgba(59, 130, 246, 0.85)",
-      dotColor: "#60a5fa"
-    };
-  }
-
-  if (teff >= 10000) {
-    return {
-      band: "B",
-      bg: "radial-gradient(circle at 32% 30%, #ffffff 15%, #c7d2fe 45%, #6366f1 100%)",
-      glow: "rgba(99, 102, 241, 0.8)",
-      dotColor: "#818cf8"
-    };
-  }
-
-  if (teff >= 7500) {
-    return {
-      band: "A",
-      bg: "radial-gradient(circle at 32% 30%, #ffffff 20%, #e0f2fe 50%, #38bdf8 100%)",
-      glow: "rgba(56, 189, 248, 0.78)",
-      dotColor: "#6fe7dd"
-    };
-  }
-
-  if (teff >= 6000) {
-    return {
-      band: "F",
-      bg: "radial-gradient(circle at 32% 30%, #ffffff 20%, #fef08a 50%, #eab308 100%)",
-      glow: "rgba(234, 179, 8, 0.75)",
-      dotColor: "#fde047"
-    };
-  }
-
-  if (teff >= 5200) {
-    return {
-      band: "G",
-      bg: "radial-gradient(circle at 32% 30%, #ffffff 15%, #fed7aa 45%, #f97316 100%)",
-      glow: "rgba(249, 115, 22, 0.78)",
-      dotColor: "#fb923c"
-    };
-  }
-
-  if (teff >= 3700) {
-    return {
-      band: "K",
-      bg: "radial-gradient(circle at 32% 30%, #ffedd5 15%, #fdba74 45%, #ea580c 100%)",
-      glow: "rgba(234, 88, 12, 0.75)",
-      dotColor: "#f97316"
-    };
-  }
-
-  return {
-    band: "M",
-    bg: "radial-gradient(circle at 32% 30%, #fee2e2 15%, #fca5a5 45%, #ef4444 100%)",
-    glow: "rgba(239, 68, 68, 0.75)",
-    dotColor: "#f87171"
-  };
+function getTemperatureBand(teff) {
+  if (teff === null) return "?";
+  if (teff >= 30000) return "O";
+  if (teff >= 10000) return "B";
+  if (teff >= 7500) return "A";
+  if (teff >= 6000) return "F";
+  if (teff >= 5200) return "G";
+  if (teff >= 3700) return "K";
+  return "M";
 }
 
 function formatParallax(parallax, parallaxError) {
@@ -118,16 +59,21 @@ function formatGmag(gmag) {
 
 /** Pure function: raw catalog row -> UI-ready star object. */
 export function normalizeStar(raw) {
-  const teff = toNumberOrNull(raw.temperature);
+  const rawTemperature = toNumberOrNull(raw.temperature);
+  const teff = rawTemperature !== null && rawTemperature >= 1000 && rawTemperature <= 50000
+    ? rawTemperature
+    : null;
   const parallax = toNumberOrNull(raw.parallax);
   const parallaxError = toNumberOrNull(raw.parallax_error);
   const gmagValue = toNumberOrNull(raw.phot_g_mean_mag);
+  const bpRp = toNumberOrNull(raw.bp_rp);
   const distancePc = toNumberOrNull(raw.distance_pc)
     ?? (parallax && parallax > 0 ? 1000 / parallax : null);
   const distanceLy = toNumberOrNull(raw.distance_ly)
     ?? (distancePc !== null ? distancePc * PC_TO_LY : null);
 
-  const spec = getSpectralInfo(teff);
+  const temperatureBand = getTemperatureBand(teff);
+  const appearance = getStellarAppearance(teff, bpRp);
   const ra = toNumberOrNull(raw.ra);
   const dec = toNumberOrNull(raw.dec);
 
@@ -156,11 +102,14 @@ export function normalizeStar(raw) {
     parallax,
     parallax_error: parallaxError,
     phot_g_mean_mag: gmagValue,
+    bp_rp: bpRp,
     distance_pc: distancePc,
     distance_ly: distanceLy,
-    temperatureBand: spec.band,
-    bandLabel: teff === null ? "CLASS UNKNOWN" : `≈ ${spec.band}-TYPE · FROM TEFF`,
-    kicker: teff === null ? "CLASS UNKNOWN" : `≈ ${spec.band}-TYPE · FROM TEFF`,
+    temperatureBand,
+    colorSource: appearance.source,
+    colorLabel: appearance.label,
+    bandLabel: teff === null ? "CLASS UNKNOWN" : `≈ ${temperatureBand}-TYPE · FROM TEFF`,
+    kicker: teff === null ? "CLASS UNKNOWN" : `≈ ${temperatureBand}-TYPE · FROM TEFF`,
     category: selectionLabel,
     designation: designation || "—",
     code: `TARGET // ${cleanId.slice(0, 8)}-${sourceSuffix}`,
@@ -173,9 +122,7 @@ export function normalizeStar(raw) {
         : `${Math.round(distanceLy)} LY`,
     parallaxDisplay: formatParallax(parallax, parallaxError),
     gmag: formatGmag(gmagValue),
-    bg: spec.bg,
-    glow: spec.glow,
-    dotColor: spec.dotColor
+    dotColor: appearance.color
   };
 }
 
