@@ -10,6 +10,7 @@ StarScope is a small, browser-based star explorer built around a searchable 3D m
 - Explore the stars in a 3D map; switch between the nearby sample and the full catalog.
 - Inspect parallax, apparent magnitude, temperature, and BP − RP when available.
 - See distances derived from parallax, with missing measurements shown explicitly.
+- Hear a soft ambient pad and gentle star tones after interacting with the page; audio can be toggled off.
 - Follow links to the astronomical archives for the selected source.
 
 ## Run locally

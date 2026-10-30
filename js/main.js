@@ -190,6 +190,10 @@ function revertTelemetry() {
 // =============================================================================
 
 let audioCtx = null;
+let ambientBus = null;
+let ambientOscillators = [];
+let ambientFilter = null;
+let ambientStopTimer = null;
 let soundOn = true;
 
 function ensureAudio() {
@@ -205,6 +209,59 @@ function ensureAudio() {
   return audioCtx;
 }
 
+function startAmbient() {
+  if (!soundOn) return;
+  const ctxA = ensureAudio();
+  if (!ctxA) return;
+
+  window.clearTimeout(ambientStopTimer);
+  ambientStopTimer = null;
+
+  if (!ambientBus) {
+    ambientFilter = ctxA.createBiquadFilter();
+    ambientBus = ctxA.createGain();
+    ambientFilter.type = "lowpass";
+    ambientFilter.frequency.value = 700;
+    ambientFilter.Q.value = 0.4;
+    ambientBus.gain.value = 0.0001;
+    ambientFilter.connect(ambientBus).connect(ctxA.destination);
+
+    [[174.61, 0.42], [220, 0.27], [261.63, 0.12]].forEach(([frequency, level]) => {
+      const oscillator = ctxA.createOscillator();
+      const voice = ctxA.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      voice.gain.value = level;
+      oscillator.connect(voice).connect(ambientFilter);
+      oscillator.start();
+      ambientOscillators.push(oscillator);
+    });
+  }
+
+  const now = ctxA.currentTime;
+  ambientBus.gain.cancelScheduledValues(now);
+  ambientBus.gain.setTargetAtTime(0.018, now, 1.2);
+}
+
+function stopAmbient() {
+  if (!audioCtx || !ambientBus) return;
+  const now = audioCtx.currentTime;
+  const busToStop = ambientBus;
+  ambientBus.gain.cancelScheduledValues(now);
+  ambientBus.gain.setTargetAtTime(0.0001, now, 0.2);
+  window.clearTimeout(ambientStopTimer);
+  ambientStopTimer = window.setTimeout(() => {
+    if (soundOn || ambientBus !== busToStop) return;
+    ambientOscillators.forEach((oscillator) => oscillator.stop());
+    ambientOscillators = [];
+    ambientFilter?.disconnect();
+    ambientBus?.disconnect();
+    ambientFilter = null;
+    ambientBus = null;
+    ambientStopTimer = null;
+  }, 1200);
+}
+
 function teffToFreq(teff) {
   const min = 2800;
   const max = 13000;
@@ -216,40 +273,43 @@ function teffToFreq(teff) {
 
 function playStarTone(teff) {
   if (!soundOn || !Number.isFinite(teff)) return;
+  startAmbient();
   const ctxA = ensureAudio();
   if (!ctxA) return;
 
   const now = ctxA.currentTime;
   const freq = teffToFreq(teff);
-  const isHot = teff > 7000;
-
-  const osc1 = ctxA.createOscillator();
-  const osc2 = ctxA.createOscillator();
+  const oscillator = ctxA.createOscillator();
+  const overtone = ctxA.createOscillator();
+  const overtoneGain = ctxA.createGain();
   const gain = ctxA.createGain();
   const filter = ctxA.createBiquadFilter();
 
-  osc1.type = isHot ? "sine" : "triangle";
-  osc2.type = isHot ? "square" : "sine";
-  osc1.frequency.value = freq;
-  osc2.frequency.value = freq * 2.01;
+  oscillator.type = "sine";
+  overtone.type = "sine";
+  oscillator.frequency.value = freq;
+  overtone.frequency.value = freq * 1.5;
+  overtoneGain.gain.value = 0.12;
   filter.type = "lowpass";
-  filter.frequency.value = isHot ? 6000 : 1800;
+  filter.frequency.value = 1400;
+  filter.Q.value = 0.35;
 
-  const gain2 = ctxA.createGain();
-  gain2.gain.value = isHot ? 0.06 : 0.02;
-
-  osc1.connect(filter);
-  osc2.connect(gain2).connect(filter);
+  oscillator.connect(filter);
+  overtone.connect(overtoneGain).connect(filter);
   filter.connect(gain).connect(ctxA.destination);
 
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.linearRampToValueAtTime(0.075, now + 0.12);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
 
-  osc1.start(now);
-  osc2.start(now);
-  osc1.stop(now + 0.95);
-  osc2.stop(now + 0.95);
+  oscillator.start(now);
+  overtone.start(now);
+  oscillator.stop(now + 1.85);
+  overtone.stop(now + 1.85);
+  oscillator.onended = () => {
+    filter.disconnect();
+    gain.disconnect();
+  };
 }
 
 function playHoverTick() {
@@ -261,12 +321,13 @@ function playHoverTick() {
   const osc = ctxA.createOscillator();
   const gain = ctxA.createGain();
   osc.type = "sine";
-  osc.frequency.value = 1200;
-  gain.gain.setValueAtTime(0.03, now);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+  osc.frequency.value = 660;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.linearRampToValueAtTime(0.012, now + 0.025);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
   osc.connect(gain).connect(ctxA.destination);
   osc.start(now);
-  osc.stop(now + 0.09);
+  osc.stop(now + 0.24);
 }
 
 const soundToggle = document.getElementById("soundToggle");
@@ -277,9 +338,14 @@ if (soundToggle) {
     soundToggle.setAttribute("aria-pressed", String(soundOn));
     const label = document.getElementById("soundLabel");
     if (label) label.textContent = "AUDIO: " + (soundOn ? "ON" : "OFF");
-    if (soundOn) ensureAudio();
+    if (soundOn) startAmbient();
+    else stopAmbient();
   });
 }
+
+document.addEventListener("pointerdown", (event) => {
+  if (soundOn && !event.target.closest("#soundToggle")) startAmbient();
+}, { once: true });
 
 // =============================================================================
 // 5. FEATURED STAR MARKERS & INTERACTIVE HUD LAYER
@@ -288,8 +354,46 @@ if (soundToggle) {
 const layer = document.getElementById("featuredLayer");
 const panel = document.getElementById("infoPanel");
 
+const PANEL_MARGIN = 16;
+const PANEL_MAX_WIDTH = 260;
+let activeStarButton = null;
+
+function positionPanel(button) {
+  if (!button || !panel || !panel.classList.contains("open")) return;
+
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const starRect = button.getBoundingClientRect();
+  const panelWidth = Math.min(PANEL_MAX_WIDTH, viewportWidth - PANEL_MARGIN * 2);
+  panel.style.width = `${panelWidth}px`;
+
+  const panelHeight = panel.offsetHeight;
+  let left;
+  let top;
+
+  if (viewportWidth <= 640) {
+    left = starRect.left + starRect.width / 2 - panelWidth / 2;
+    top = starRect.bottom + 30;
+    if (top + panelHeight > viewportHeight - PANEL_MARGIN) {
+      top = starRect.top - panelHeight - 16;
+    }
+  } else {
+    left = starRect.right + 24;
+    if (left + panelWidth > viewportWidth - PANEL_MARGIN) {
+      left = starRect.left - panelWidth - 24;
+    }
+    top = starRect.top - 10;
+  }
+
+  left = Math.max(PANEL_MARGIN, Math.min(left, viewportWidth - panelWidth - PANEL_MARGIN));
+  top = Math.max(PANEL_MARGIN, Math.min(top, viewportHeight - panelHeight - PANEL_MARGIN));
+  panel.style.left = `${left}px`;
+  panel.style.top = `${top}px`;
+}
+
 function openPanel(star, btn) {
   lockedStar = star;
+  activeStarButton = btn;
   updateTelemetryToStar(star);
 
   document.getElementById("pName").textContent = star.name;
@@ -299,24 +403,18 @@ function openPanel(star, btn) {
   document.getElementById("pMag").textContent = star.gmag;
   document.getElementById("pTeff").textContent = star.temp;
 
-  const rect = btn.getBoundingClientRect();
-  const panelW = 260;
-  let left = rect.left + 24;
-  let top = rect.top - 10;
-  if (left + panelW > window.innerWidth - 20) left = rect.left - panelW - 24;
-  if (top + 220 > window.innerHeight) top = window.innerHeight - 240;
-  if (top < 20) top = 20;
-
-  panel.style.left = left + "px";
-  panel.style.top = top + "px";
   panel.classList.add("open");
+  positionPanel(btn);
 }
 
 function closePanel() {
   if (panel) panel.classList.remove("open");
   lockedStar = null;
+  activeStarButton = null;
   revertTelemetry();
 }
+
+window.addEventListener("resize", () => positionPanel(activeStarButton), { passive: true });
 
 function renderFeaturedStars(stars) {
   const featuredStars = stars

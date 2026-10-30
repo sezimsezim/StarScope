@@ -79,9 +79,10 @@
   .site-nav a:hover{color:var(--cyan);}
 
   .sound-toggle{
+    min-width:44px; min-height:44px;
     background:none; border:1px solid var(--line); color:var(--ink-dim);
     font-family:inherit; font-size:10px; letter-spacing:.16em;
-    padding:5px 10px; cursor:pointer; display:flex; align-items:center; gap:6px;
+    padding:5px 10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
     transition:border-color .15s, color .15s;
   }
   .sound-toggle:hover{border-color:var(--line-strong); color:var(--ink);}
@@ -113,6 +114,10 @@
     font-size:clamp(12px, 1.6vw, 14px); letter-spacing:.22em;
     color:var(--ink-dim); max-width:560px; line-height:1.7; margin-bottom:34px;
     text-transform:uppercase;
+  }
+  .interaction-hint{
+    margin-top:14px; color:var(--ink-dim); font-size:9px;
+    letter-spacing:.16em; text-transform:uppercase;
   }
 
   /* search input */
@@ -198,8 +203,36 @@
 
   @media (max-width: 640px){
     .telemetry{display:none;}
-    .hero-title{letter-spacing:.1em;}
-    .footer-status{flex-direction:column; gap:4px; text-align:center;}
+    .site-header{top:12px; right:12px; gap:8px;}
+    .sound-toggle{min-width:44px; min-height:44px; padding:6px 9px;}
+    .site-nav a{min-height:44px; display:flex; align-items:center; padding:0 6px;}
+    .hero{padding:0 20px;}
+    .hero-title{font-size:clamp(40px, 12vw, 64px); letter-spacing:.08em;}
+    .hero-tagline{max-width:440px; font-size:11px; letter-spacing:.04em; line-height:1.5; margin-bottom:24px;}
+    .featured-star{width:44px; height:44px; justify-content:center;}
+    .featured-star .tag{top:calc(100% + 2px); font-size:11px; letter-spacing:.1em; max-width:42vw; white-space:normal; text-align:center;}
+    .info-panel{width:calc(100vw - 32px); max-width:260px; padding:14px 16px; gap:9px;}
+    .info-title{font-size:14px; letter-spacing:.1em;}
+    .info-sub{font-size:11px; letter-spacing:.08em; overflow-wrap:anywhere;}
+    .info-grid{font-size:11px; gap:8px 10px;}
+    .info-grid dt{letter-spacing:.06em;}
+    .info-grid dd{font-size:12px; overflow-wrap:anywhere;}
+    .info-close{min-width:44px; min-height:44px; font-size:16px;}
+    .keyboard-hint{display:none;}
+    .interaction-hint{font-size:11px; letter-spacing:.1em; margin-top:12px;}
+    .footer-status{left:16px; right:16px; bottom:14px; flex-direction:column; gap:5px; text-align:center; font-size:9px; letter-spacing:.12em;}
+  }
+
+  @media (hover: none){
+    .featured-star:first-child .ring{animation:target-pulse 2.4s ease-out infinite;}
+    @keyframes target-pulse{
+      0%{transform:translate(-50%,-50%) scale(.85); opacity:.75;}
+      75%,100%{transform:translate(-50%,-50%) scale(1.7); opacity:0;}
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .featured-star:first-child .ring{animation:none;}
   }
 </style>
 </head>
@@ -242,14 +275,15 @@
     <p class="hero-tagline">AN INTERACTIVE EXPLORER OF CELESTIAL TARGETS, SPECTRAL TELEMETRY, AND STELLAR DATA.</p>
 
     <form class="star-search" action="explore.html" method="get" role="search">
-      <input id="star-query" type="search" name="q" placeholder="Proxima Centauri / Barnard's Star" autocomplete="off" spellcheck="false" aria-label="Search star">
+      <input id="star-query" type="search" name="q" placeholder="Proxima / Barnard" autocomplete="off" spellcheck="false" aria-label="Search star">
       <button class="search-submit" type="submit" aria-label="Search">GO ›</button>
     </form>
+    <p class="interaction-hint">SELECT A STAR TO VIEW ITS GAIA DATA</p>
   </main>
 
   <!-- info popover -->
   <div class="info-panel" id="infoPanel" role="dialog" aria-modal="false" aria-labelledby="pName">
-    <button class="info-close" id="infoClose" type="button" aria-label="Close details">✕ ESC</button>
+    <button class="info-close" id="infoClose" type="button" aria-label="Close details">✕ <span class="keyboard-hint">ESC</span></button>
     <div class="info-title" id="pName">—</div>
     <div class="info-sub" id="pDesig">—</div>
     <dl class="info-grid">
