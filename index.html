@@ -213,7 +213,7 @@
 
   <!-- telemetry ticker -->
   <div class="telemetry" aria-live="polite">
-    EPOCH <span>J2000.0</span> // TARGET <span id="tTarget">VIEWPORT</span> // RA <span id="tRA">12h 00m 00s</span> // DEC <span id="tDEC">+00° 00' 00"</span> // FOV <span>060°</span>
+    EPOCH <span>J2016.0</span> // TARGET <span id="tTarget">VIEWPORT</span> // RA <span id="tRA">12h 00m 00s</span> // DEC <span id="tDEC">+00° 00' 00"</span> // FOV <span>060°</span>
   </div>
 
   <!-- header -->
@@ -253,16 +253,16 @@
     <div class="info-title" id="pName">—</div>
     <div class="info-sub" id="pDesig">—</div>
     <dl class="info-grid">
-      <div><dt>DIST</dt><dd id="pDist">—</dd></div>
-      <div><dt>SPECTRAL</dt><dd id="pSpec">—</dd></div>
-      <div><dt>APPARENT MAG</dt><dd id="pMag">—</dd></div>
-      <div><dt>TEMP (TEFF)</dt><dd id="pTeff">—</dd></div>
+      <div><dt>DISTANCE · LY</dt><dd id="pDist">—</dd></div>
+      <div><dt>PARALLAX · mas</dt><dd id="pParallax">—</dd></div>
+      <div><dt>APPARENT G · mag</dt><dd id="pMag">—</dd></div>
+      <div><dt>GAIA T<sub>eff</sub></dt><dd id="pTeff">—</dd></div>
     </dl>
   </div>
 
   <!-- footer status -->
   <footer class="footer-status">
-    <span>GAIA DR3 // 1.8B SOURCES</span>
+    <span id="catalogSampleCount">GAIA DR3 // LOADING SAMPLE</span>
     <span>ASTRONOMICAL RECEPTOR // ACTIVE</span>
   </footer>
 

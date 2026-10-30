@@ -3,6 +3,8 @@
  * NASA Hackathon Edition // Low-Spec Hardware Optimized
  */
 
+import { decToDms, loadGaiaStars, raToHms } from "../gaia-adapter.js";
+
 // =============================================================================
 // 1. CELESTIAL STARFIELD ENGINE (Optimized 2D Canvas)
 // =============================================================================
@@ -72,84 +74,13 @@ if (canvas) {
 // 2. ASTRONOMICAL DATA & TELEMETRY CONTROLLER (NASA Precision)
 // =============================================================================
 
-/**
- * Scientifically verified celestial targets and coordinates (Gaia DR3 / SIMBAD epoch J2000).
- * UI Collision Fix: Shifted Sirius coordinates from (22vw, 32vh) to (15vw, 22vh) to ensure
- * clean margin clearance from the central "STARSCOPE" hero typography.
- */
-const FEATURED_STARS = [
-  {
-    name: "Sirius",
-    desig: "α Canis Majoris A",
-    x: 15, // Shifted to upper-left quadrant away from center title
-    y: 22,
-    dist: "8.6 ly",
-    spec: "A1V",
-    mag: "−1.46",
-    teff: 9940,
-    ra: "06h 45m 09s",
-    dec: "-16° 42' 58\"",
-  },
-  {
-    name: "Arcturus",
-    desig: "α Boötis",
-    x: 48,
-    y: 13,
-    dist: "37 ly",
-    spec: "K1.5III",
-    mag: "−0.05",
-    teff: 4286,
-    ra: "14h 15m 39s",
-    dec: "+19° 10' 56\"",
-  },
-  {
-    name: "Vega",
-    desig: "α Lyrae",
-    x: 82,
-    y: 20,
-    dist: "25 ly",
-    spec: "A0V",
-    mag: "0.03",
-    teff: 9600,
-    ra: "18h 36m 56s",
-    dec: "+38° 47' 01\"",
-  },
-  {
-    name: "Rigel",
-    desig: "β Orionis",
-    x: 14,
-    y: 72,
-    dist: "~860 ly",
-    spec: "B8Ia",
-    mag: "0.13",
-    teff: 12100,
-    ra: "05h 14m 32s",
-    dec: "-08° 12' 06\"",
-  },
-  {
-    name: "Betelgeuse",
-    desig: "α Orionis",
-    x: 85,
-    y: 72,
-    dist: "~550 ly",
-    spec: "M1-2Ia",
-    mag: "~0.5 (var.)",
-    teff: 3600,
-    ra: "05h 55m 10s",
-    dec: "+07° 24' 25\"",
-  },
-  {
-    name: "Proxima Centauri",
-    desig: "α Centauri C",
-    x: 66,
-    y: 84,
-    dist: "4.24 ly",
-    spec: "M5.5Ve",
-    mag: "11.13",
-    teff: 3042,
-    ra: "14h 29m 43s",
-    dec: "-62° 40' 46\"",
-  },
+const FEATURED_POSITIONS = [
+  { x: 15, y: 22 },
+  { x: 48, y: 13 },
+  { x: 82, y: 20 },
+  { x: 14, y: 72 },
+  { x: 85, y: 72 },
+  { x: 66, y: 84 },
 ];
 
 // Idle baseline viewport telemetry
@@ -241,7 +172,9 @@ function applyTelemetry(target, ra, dec) {
 }
 
 function updateTelemetryToStar(star) {
-  applyTelemetry(star.name.toUpperCase(), star.ra, star.dec);
+  const ra = Number.isFinite(star.ra) ? raToHms(star.ra) : "—";
+  const dec = Number.isFinite(star.dec) ? decToDms(star.dec) : "—";
+  applyTelemetry(star.name.toUpperCase(), ra, dec);
 }
 
 function revertTelemetry() {
@@ -282,7 +215,7 @@ function teffToFreq(teff) {
 }
 
 function playStarTone(teff) {
-  if (!soundOn) return;
+  if (!soundOn || !Number.isFinite(teff)) return;
   const ctxA = ensureAudio();
   if (!ctxA) return;
 
@@ -360,11 +293,11 @@ function openPanel(star, btn) {
   updateTelemetryToStar(star);
 
   document.getElementById("pName").textContent = star.name;
-  document.getElementById("pDesig").textContent = star.desig;
+  document.getElementById("pDesig").textContent = star.designation;
   document.getElementById("pDist").textContent = star.dist;
-  document.getElementById("pSpec").textContent = star.spec;
-  document.getElementById("pMag").textContent = star.mag;
-  document.getElementById("pTeff").textContent = star.teff.toLocaleString() + " K";
+  document.getElementById("pParallax").textContent = star.parallaxDisplay;
+  document.getElementById("pMag").textContent = star.gmag;
+  document.getElementById("pTeff").textContent = star.temp;
 
   const rect = btn.getBoundingClientRect();
   const panelW = 260;
@@ -385,14 +318,26 @@ function closePanel() {
   revertTelemetry();
 }
 
-if (layer && panel) {
-  FEATURED_STARS.forEach((star) => {
+function renderFeaturedStars(stars) {
+  const featuredStars = stars
+    .filter((star) => star.selection === "nearest")
+    .slice(0, FEATURED_POSITIONS.length);
+
+  featuredStars.forEach((star, index) => {
+    const position = FEATURED_POSITIONS[index];
     const btn = document.createElement("button");
     btn.className = "featured-star";
-    btn.style.left = star.x + "vw";
-    btn.style.top = star.y + "vh";
+    btn.style.left = position.x + "vw";
+    btn.style.top = position.y + "vh";
     btn.setAttribute("aria-label", "Identify celestial target " + star.name);
-    btn.innerHTML = `<span class="tag">${star.name.toUpperCase()}</span><span class="ring"></span><span class="core"></span>`;
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = star.name.toUpperCase();
+    const ring = document.createElement("span");
+    ring.className = "ring";
+    const core = document.createElement("span");
+    core.className = "core";
+    btn.append(tag, ring, core);
 
     // Real-time hover preview with sound tick and coordinate scramble
     btn.addEventListener("mouseenter", () => {
@@ -407,13 +352,27 @@ if (layer && panel) {
 
     // Click locks selection and opens telescope data popover
     btn.addEventListener("click", (e) => {
-      playStarTone(star.teff);
+      playStarTone(star.temperature);
       openPanel(star, btn);
       e.stopPropagation();
     });
 
     layer.appendChild(btn);
   });
+}
+
+if (layer && panel) {
+  loadGaiaStars("./data/gaia-stars.json")
+    .then((stars) => {
+      renderFeaturedStars(stars);
+      const sampleCount = document.getElementById("catalogSampleCount");
+      if (sampleCount) sampleCount.textContent = `GAIA DR3 // ${stars.length} CATALOG SOURCES`;
+    })
+    .catch((error) => {
+      console.error("Failed to load Gaia DR3 catalog on landing page:", error);
+      const sampleCount = document.getElementById("catalogSampleCount");
+      if (sampleCount) sampleCount.textContent = "GAIA DR3 // SAMPLE UNAVAILABLE";
+    });
 
   const infoClose = document.getElementById("infoClose");
   if (infoClose) {

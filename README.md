@@ -38,7 +38,7 @@ python scripts/verify_catalog.py public/data/gaia-stars.json
 
 The explorer loads its static sample from [`public/data/gaia-stars.json`](public/data/gaia-stars.json). Measurements come from Gaia DR3; displayed distance is calculated as `1000 / parallax` parsecs. A blank Gaia measurement stays blank rather than being replaced with an estimate.
 
-The landing page's featured targets are a separate, small reference display. The searchable catalog and 3D map on the Explore page are the Gaia DR3 sample.
+The landing page's featured markers are selected from the same Gaia DR3 sample used by Explore. Marker positions on the landing page are decorative, not a to-scale sky projection; measurements and coordinates shown when a star is selected come from the catalog.
 
 ## Hackathon submission
 
