@@ -122,7 +122,7 @@
   #star-query{
     width:100%; background:rgba(9,14,24,.8); border:1px solid var(--line-strong);
     color:var(--ink); font-family:inherit; font-size:12px; letter-spacing:.14em;
-    padding:14px 18px; outline:none; transition:border-color .2s, box-shadow .2s;
+    padding:14px 84px 14px 18px; outline:none; transition:border-color .2s, box-shadow .2s;
   }
   #star-query::placeholder{color:var(--ink-dim); letter-spacing:.18em;}
   #star-query:focus{
@@ -242,7 +242,7 @@
     <p class="hero-tagline">AN INTERACTIVE EXPLORER OF CELESTIAL TARGETS, SPECTRAL TELEMETRY, AND STELLAR DATA.</p>
 
     <form class="star-search" action="explore.html" method="get" role="search">
-      <input id="star-query" type="search" name="q" placeholder="Search a star (e.g. Proxima Centauri, Barnard's Star)..." autocomplete="off" spellcheck="false" aria-label="Search star">
+      <input id="star-query" type="search" name="q" placeholder="Proxima Centauri / Barnard's Star" autocomplete="off" spellcheck="false" aria-label="Search star">
       <button class="search-submit" type="submit" aria-label="Search">GO ›</button>
     </form>
   </main>
