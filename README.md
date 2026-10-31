@@ -7,6 +7,7 @@
 Search real Gaia DR3 sources, explore them in 3D, and inspect the measurements behind each star.
 
 [Open the live demo](https://starscope-three.vercel.app/)
+
 **Vanilla JavaScript · Vite · Three.js · ESA Gaia DR3**
 
 </div>
