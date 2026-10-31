@@ -1,55 +1,113 @@
+<div align="center">
+
 # StarScope
 
-**Explore nearby stars through an interactive Gaia DR3 observatory.**
+### A small observatory for exploring our stellar neighborhood.
 
-StarScope is a small, browser-based star explorer built around a searchable 3D map and a clear, observatory-style interface. Inspect a curated sample of Gaia DR3 sources, compare stellar measurements, and open the selected source in SIMBAD, VizieR, or the Gaia archive.
+Search real Gaia DR3 sources, explore them in 3D, and inspect the measurements behind each star.
+
+[Open the live demo](https://star-scope-o29hekd5p-star-scope1.vercel.app/)
+
+**Vanilla JavaScript · Vite · Three.js · ESA Gaia DR3**
+
+</div>
+
+<!--
+HERO GIF — place directly below the intro:
+1. Save a short (8–15 sec), compressed screen recording as docs/media/starscope-demo.gif.
+2. Show: open Explore → search Barnard's Star → select the result → rotate the map.
+3. Then replace this comment with:
+<p align="center">
+  <img src="docs/media/starscope-demo.gif" alt="StarScope: search for a Gaia star and explore it in the interactive 3D map" width="900">
+</p>
+-->
+
+StarScope turns a curated sample of nearby stars into a clear, interactive sky-exploration experience. The Landing page introduces the observatory; Explore lets you search by star name, alias, or Gaia source ID, then inspect a source in the 3D map and follow links to astronomical archives.
+
+## Explore the interface
+
+<!--
+SCREENSHOTS — add these after this paragraph, in the order shown:
+Save current captures under docs/media/ using these filenames, then uncomment the table.
+
+| Landing — desktop | Explore — selected star |
+|:---:|:---:|
+| ![StarScope Landing page](docs/media/landing-desktop.png) | ![Explore page with a selected Gaia star](docs/media/explore-selected-star.png) |
+
+| Landing — mobile | Explore — mobile |
+|:---:|:---:|
+| ![StarScope on a phone](docs/media/landing-mobile.png) | ![StarScope Explore on a phone](docs/media/explore-mobile.png) |
+-->
+
+The Landing page features stars from the same Gaia sample used by Explore. Its marker positions are decorative, not a to-scale sky projection; the displayed measurements and coordinates come from the catalog.
 
 ## What you can do
 
 - Search the sample by common name, alias, or Gaia source ID.
-- Explore the stars in a 3D map; switch between the nearby sample and the full catalog.
-- Inspect parallax, apparent magnitude, temperature, and BP − RP when available.
-- See distances derived from parallax, with missing measurements shown explicitly.
-- Hear a soft ambient pad and gentle star tones after interacting with the page; audio can be toggled off.
-- Follow links to the astronomical archives for the selected source.
+- Switch the 3D map between the nearby subset and the full sample.
+- Select stars from the map or search results and inspect their Gaia measurements.
+- Open the selected source in SIMBAD, VizieR, or the ESA Gaia archive.
+- Hear a quiet ambient pad and gentle star tones after interacting with the page; audio can be switched off.
 
-## Run locally
+## Data, clearly labeled
 
-Requires Node.js 20.19+ or 22.12+.
+Explore loads a static, curated sample from [`public/data/gaia-stars.json`](public/data/gaia-stars.json) — **25 Gaia DR3 sources**, including the nearby subset shown in the default map view.
 
-```bash
-npm ci
-npm run dev
-```
+- Parallax, apparent G magnitude, effective temperature, and BP − RP are shown when available in the catalog.
+- Distance is derived from parallax: `distance_pc = 1000 / parallax_mas`; it is not presented as a directly measured Gaia field.
+- Missing measurements remain blank (`—`) rather than being filled with invented values.
+- Star colors are a visualization based primarily on effective temperature; they are not literal photographs or measured visible-light colors.
 
-Open the local URL printed by Vite. To check the project before shipping:
-
-```bash
-npm test
-npm run build
-```
-
-The optional catalog check queries the ESA Gaia archive and needs an internet connection:
+To check the catalog against the ESA Gaia archive, run the optional verifier. It requires an internet connection:
 
 ```bash
 python scripts/verify_catalog.py public/data/gaia-stars.json
 ```
 
-## Data notes
+## Run locally
 
-The explorer loads its static sample from [`public/data/gaia-stars.json`](public/data/gaia-stars.json). Measurements come from Gaia DR3; displayed distance is calculated as `1000 / parallax` parsecs. A blank Gaia measurement stays blank rather than being replaced with an estimate.
+**Requirements:** Node.js 20.19+ or 22.12+.
 
-The landing page's featured markers are selected from the same Gaia DR3 sample used by Explore. Marker positions on the landing page are decorative, not a to-scale sky projection; measurements and coordinates shown when a star is selected come from the catalog.
+```bash
+git clone https://github.com/sezimsezim/StarScope.git
+cd StarScope
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite. To test and build the production version:
+
+```bash
+npm test
+npm run build
+npm run preview
+```
+
+## Project layout
+
+```text
+index.html                 Landing page
+explore.html               Gaia catalog explorer
+explore.css                Explore page styles
+js/main.js                 Landing interactions, markers, and audio
+js/search.js               Catalog search and ranking
+js/star-map.js             Interactive Three.js star map
+js/stellar-color.js        Data-driven star color mapping
+gaia-adapter.js            Gaia catalog normalization and formatting
+public/data/gaia-stars.json Static catalog used by both pages
+scripts/verify_catalog.py  Optional ESA Gaia archive check
+tests/                     Search and catalog unit tests
+```
 
 ## Hackathon submission
 
-> StarScope is an interactive Gaia DR3 explorer that turns a curated sample of real stellar measurements into a searchable, three-dimensional map. Search by star name, alias, or Gaia source ID; inspect parallax, temperature, and photometry; and jump directly to SIMBAD, VizieR, or the ESA Gaia archive. Distances are derived from parallax, and unavailable measurements are clearly left blank.
+> StarScope is an interactive Gaia DR3 explorer for a curated sample of nearby stars. Search by name, alias, or Gaia source ID; explore sources in a 3D map; inspect catalog measurements; and jump directly to SIMBAD, VizieR, or the ESA Gaia archive. Distances are labeled as parallax-derived, and unavailable measurements stay visibly blank.
 
-## Ship checklist
+## Before submitting
 
 - [ ] Run `npm test` and `npm run build`.
-- [ ] Open both the landing page and Explore page from the built site.
-- [ ] Try a known star, an alias, a Gaia source ID, and a query with no match.
-- [ ] Check the 3D map controls and archive links on desktop and a narrow/mobile viewport.
-- [ ] Run the Gaia catalog verification and confirm the result before claiming the sample is verified.
-- [ ] Add the deployed demo URL and one current screenshot to the hackathon submission.
+- [ ] Check the live demo on desktop and a real phone.
+- [ ] Try a known name, an alias, a Gaia source ID, and a query with no match.
+- [ ] Confirm the archive links open the selected source.
+- [ ] Add the demo GIF and current desktop/mobile screenshots in `docs/media/`.
+- [ ] Run the catalog verifier before making a fresh claim that the sample has been archive-verified.
