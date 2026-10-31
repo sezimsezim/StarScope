@@ -6,8 +6,7 @@
 
 Search real Gaia DR3 sources, explore them in 3D, and inspect the measurements behind each star.
 
-[Open the live demo](https://star-scope-o29hekd5p-star-scope1.vercel.app/)
-
+[Open the live demo](https://starscope-three.vercel.app/)
 **Vanilla JavaScript · Vite · Three.js · ESA Gaia DR3**
 
 </div>
@@ -103,11 +102,3 @@ tests/                     Search and catalog unit tests
 
 > StarScope is an interactive Gaia DR3 explorer for a curated sample of nearby stars. Search by name, alias, or Gaia source ID; explore sources in a 3D map; inspect catalog measurements; and jump directly to SIMBAD, VizieR, or the ESA Gaia archive. Distances are labeled as parallax-derived, and unavailable measurements stay visibly blank.
 
-## Before submitting
-
-- [ ] Run `npm test` and `npm run build`.
-- [ ] Check the live demo on desktop and a real phone.
-- [ ] Try a known name, an alias, a Gaia source ID, and a query with no match.
-- [ ] Confirm the archive links open the selected source.
-- [ ] Add the demo GIF and current desktop/mobile screenshots in `docs/media/`.
-- [ ] Run the catalog verifier before making a fresh claim that the sample has been archive-verified.
