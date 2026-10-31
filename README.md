@@ -35,16 +35,20 @@ browser zoom for desktop captures; show the selected target on Explore. -->
     <th>Desktop Landing Page</th>
   </tr>
   <tr>
-    <td align="center"><strong>INSERT DESKTOP EXPLORE HUD SCREENSHOT HERE</strong></td>
-    <td align="center"><strong>INSERT DESKTOP LANDING SCREENSHOT HERE</strong></td>
+    <td align="center"><strong><img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7b563b8b-b8d5-4dbc-b765-468190dfb9c4" />
+</strong></td>
+    <td align="center"><strong><img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/cd4d5266-dfee-46c3-8582-fda348458faf" />
+</strong></td>
   </tr>
   <tr>
     <th>Mobile Explore HUD</th>
     <th>Mobile Landing Page</th>
   </tr>
   <tr>
-    <td align="center"><strong>INSERT MOBILE EXPLORE HUD SCREENSHOT HERE</strong></td>
-    <td align="center"><strong>INSERT MOBILE LANDING SCREENSHOT HERE</strong></td>
+    <td align="center"><strong><img width="695" height="1280" alt="image" src="https://github.com/user-attachments/assets/dba77772-2a8f-41e3-bf50-4f288332470a" />
+</strong></td>
+    <td align="center"><strong><img width="657" height="1280" alt="image" src="https://github.com/user-attachments/assets/a7560fef-6fb3-489d-9f3e-6e6b9485be56" />
+</strong></td>
   </tr>
 </table>
 
@@ -179,12 +183,3 @@ tests/                      Node.js unit tests
 
 > **StarScope turns trusted astronomical data into an approachable, interactive observatory.** Instead of relying on plausible-looking but unverifiable star facts, it connects a curated Gaia DR3 sample to a searchable 3D map, labels derived distances honestly, preserves missing measurements as missing, and links every selected target back to astronomical archives. Its framework-free implementation, responsive Landing experience, and gentle opt-in sonification make the science inviting without disguising what the data can—and cannot—say.
 
-## Before submitting
-
-- [ ] Run `npm test` and `npm run build`.
-- [ ] Open the production preview and verify both Landing and Explore.
-- [ ] Try a common name, an alias, a Greek-letter designation, a Gaia source ID, and a query with no match.
-- [ ] Check map selection, both map modes, camera reset, and archive links.
-- [ ] Check the Landing and Explore pages on a real phone and at a narrow desktop viewport.
-- [ ] Run the Gaia verifier and report its current result accurately.
-- [ ] Replace every “INSERT … HERE” placeholder above with a current GIF or screenshot before publishing the README.
