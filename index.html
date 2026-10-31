@@ -221,18 +221,20 @@
     .keyboard-hint{display:none;}
     .interaction-hint{font-size:11px; letter-spacing:.1em; margin-top:12px;}
     .footer-status{left:16px; right:16px; bottom:14px; flex-direction:column; gap:5px; text-align:center; font-size:9px; letter-spacing:.12em;}
-  }
-
-  @media (hover: none){
-    .featured-star:first-child .ring{animation:target-pulse 2.4s ease-out infinite;}
+    .featured-star .ring{animation:target-pulse 3.2s ease-out infinite;}
+    .featured-star:nth-child(2) .ring{animation-delay:.45s;}
+    .featured-star:nth-child(3) .ring{animation-delay:.9s;}
+    .featured-star:nth-child(4) .ring{animation-delay:1.35s;}
+    .featured-star:nth-child(5) .ring{animation-delay:1.8s;}
+    .featured-star:nth-child(6) .ring{animation-delay:2.25s;}
     @keyframes target-pulse{
-      0%{transform:translate(-50%,-50%) scale(.85); opacity:.75;}
-      75%,100%{transform:translate(-50%,-50%) scale(1.7); opacity:0;}
+      0%{transform:translate(-50%,-50%) scale(.9); opacity:.55;}
+      80%,100%{transform:translate(-50%,-50%) scale(1.55); opacity:0;}
     }
   }
 
   @media (prefers-reduced-motion: reduce){
-    .featured-star:first-child .ring{animation:none;}
+    .featured-star .ring{animation:none;}
   }
 </style>
 </head>

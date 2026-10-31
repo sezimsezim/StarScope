@@ -226,7 +226,7 @@ function startAmbient() {
     ambientBus.gain.value = 0.0001;
     ambientFilter.connect(ambientBus).connect(ctxA.destination);
 
-    [[174.61, 0.42], [220, 0.27], [261.63, 0.12]].forEach(([frequency, level]) => {
+    [[98, 0.2], [146.83, 0.12], [196, 0.06]].forEach(([frequency, level]) => {
       const oscillator = ctxA.createOscillator();
       const voice = ctxA.createGain();
       oscillator.type = "sine";
@@ -240,7 +240,7 @@ function startAmbient() {
 
   const now = ctxA.currentTime;
   ambientBus.gain.cancelScheduledValues(now);
-  ambientBus.gain.setTargetAtTime(0.018, now, 1.2);
+  ambientBus.gain.setTargetAtTime(0.012, now, 2);
 }
 
 function stopAmbient() {
@@ -248,7 +248,7 @@ function stopAmbient() {
   const now = audioCtx.currentTime;
   const busToStop = ambientBus;
   ambientBus.gain.cancelScheduledValues(now);
-  ambientBus.gain.setTargetAtTime(0.0001, now, 0.2);
+  ambientBus.gain.setTargetAtTime(0.0001, now, 0.35);
   window.clearTimeout(ambientStopTimer);
   ambientStopTimer = window.setTimeout(() => {
     if (soundOn || ambientBus !== busToStop) return;
@@ -265,10 +265,10 @@ function stopAmbient() {
 function teffToFreq(teff) {
   const min = 2800;
   const max = 13000;
-  const fMin = 180;
-  const fMax = 760;
   const clamped = Math.max(min, Math.min(max, teff));
-  return fMin + ((clamped - min) / (max - min)) * (fMax - fMin);
+  const scale = [196, 220, 246.94, 293.66, 329.63, 392, 440, 493.88, 587.33, 659.25];
+  const noteIndex = Math.round(((clamped - min) / (max - min)) * (scale.length - 1));
+  return scale[noteIndex];
 }
 
 function playStarTone(teff) {
@@ -280,34 +280,19 @@ function playStarTone(teff) {
   const now = ctxA.currentTime;
   const freq = teffToFreq(teff);
   const oscillator = ctxA.createOscillator();
-  const overtone = ctxA.createOscillator();
-  const overtoneGain = ctxA.createGain();
   const gain = ctxA.createGain();
-  const filter = ctxA.createBiquadFilter();
 
   oscillator.type = "sine";
-  overtone.type = "sine";
   oscillator.frequency.value = freq;
-  overtone.frequency.value = freq * 1.5;
-  overtoneGain.gain.value = 0.12;
-  filter.type = "lowpass";
-  filter.frequency.value = 1400;
-  filter.Q.value = 0.35;
-
-  oscillator.connect(filter);
-  overtone.connect(overtoneGain).connect(filter);
-  filter.connect(gain).connect(ctxA.destination);
+  oscillator.connect(gain).connect(ctxA.destination);
 
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(0.075, now + 0.12);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+  gain.gain.linearRampToValueAtTime(0.035, now + 0.24);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.4);
 
   oscillator.start(now);
-  overtone.start(now);
-  oscillator.stop(now + 1.85);
-  overtone.stop(now + 1.85);
+  oscillator.stop(now + 2.45);
   oscillator.onended = () => {
-    filter.disconnect();
     gain.disconnect();
   };
 }
@@ -321,13 +306,13 @@ function playHoverTick() {
   const osc = ctxA.createOscillator();
   const gain = ctxA.createGain();
   osc.type = "sine";
-  osc.frequency.value = 660;
+  osc.frequency.value = 523.25;
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(0.012, now + 0.025);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+  gain.gain.linearRampToValueAtTime(0.006, now + 0.08);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
   osc.connect(gain).connect(ctxA.destination);
   osc.start(now);
-  osc.stop(now + 0.24);
+  osc.stop(now + 0.48);
 }
 
 const soundToggle = document.getElementById("soundToggle");
